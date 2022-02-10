@@ -18,17 +18,19 @@ d(BR,   0b0000)\
 d(JMP,  0b1100)\
 d(JSR,  0b0100)\
 d(JSRR, 0b0100)\
-d(LD,   0b0010)\
-d(LDI,  0b1010)\
-d(LDR,  0b0110)\
+d(LDB,  0b0010)\
+d(LDW,  0b0110)\
 d(LEA,  0b1110)\
 d(NOT,  0b1001)\
 d(RET,  0b1100)\
 d(RTI,  0b1000)\
-d(ST,   0b0011)\
-d(STI,  0b1011)\
-d(STR,  0b0111)\
-d(TRAP, 0b1111)
+d(LSHF, 0b1101)\
+d(RSHFL,0b1101)\
+d(RSHFA,0b1101)\
+d(STB,  0b0011)\
+d(STW,  0b0111)\
+d(TRAP, 0b1111)\
+d(XOR,  0b1001)
 
 #define register_data(d) \
 d(R0)\

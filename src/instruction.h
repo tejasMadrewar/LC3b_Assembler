@@ -34,24 +34,34 @@ struct instruction {
     };
 
     struct {
+      uint16_t boffset6 : 6;
+      uint16_t p6 : 10;
+    };
+
+    struct {
       uint16_t Poffset11 : 11;
-      uint16_t p6 : 5;
+      uint16_t p7 : 5;
     };
 
     struct {
       uint16_t trapvect8 : 8;
-      uint16_t p7 : 8;
+      uint16_t p8 : 8;
+    };
+
+    struct {
+      uint16_t p9 : 6;
+      uint16_t SR : 3;
+    };
+
+    struct {
+      uint16_t amount4 : 4;
+      uint16_t p10 : 12;
     };
 
     struct {
       uint16_t PCoffset9 : 9;
       uint16_t SR : 3;
     } ST;
-
-    struct {
-      uint16_t p8 : 6;
-      uint16_t SR : 3;
-    } NOT;
 
     struct {
       bool b0 : 1;

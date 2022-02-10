@@ -49,6 +49,9 @@ TEST_CASE("Instruction structure") {
 
     i.i = BM16(6, 0);
     REQUIRE(i.offset6 == 0b111111);
+
+    i.i = BM16(6, 0);
+    REQUIRE(i.boffset6 == 0b111111);
   }
 
   SECTION("NZP") {
@@ -77,15 +80,21 @@ TEST_CASE("Instruction structure") {
     REQUIRE(i.ST.SR == 0b111);
   }
 
-  SECTION("NOT.SR") {
+  SECTION("SR") {
     i.i = BM16(3, 6);
-    REQUIRE(i.NOT.SR == 0b111);
+    REQUIRE(i.SR == 0b111);
   }
 
   SECTION("TRAPVECT8") {
     i.i = BM16(8, 0);
     REQUIRE(i.trapvect8 == 0b11111111);
   }
+
+  SECTION("amount4") {
+    i.i = BM16(4, 0);
+    REQUIRE(i.amount4 == 0b1111);
+  }
+
   SECTION("BITS") {
 
 // clang-format off
@@ -95,10 +104,8 @@ TEST_CASE("Instruction structure") {
   i.i = BM16(1, d);                                                            \
   REQUIRE(i.b##d == true);
 
-    // BITLIST(t)
-    //  i.i = BM16(1, 0);
-    //  cout << bitset<16>(i.i) << "\n";
-    //  REQUIRE(i.b0 == true);
+    BITLIST(t)
+
 #undef BITLIST
 #undef t
   }
