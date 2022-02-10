@@ -4,7 +4,7 @@ OBJDIR := obj
 DEPDIR := $(OBJDIR)\deps
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
-CXXFLAGS += --std=c++14
+CXXFLAGS += --std=c++14 -g
 LDFLAGS +=
 
 COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c

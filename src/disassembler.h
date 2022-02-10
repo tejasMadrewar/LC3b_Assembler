@@ -10,9 +10,9 @@
 
 using namespace std;
 
-class disassembler {
+class Disassembler {
 public:
-  typedef string (disassembler::*disFun)(instruction i);
+  typedef string (Disassembler::*disFun)(instruction i);
 
   void disassemble(vector<instruction> program) {
     for (auto i : program) {
@@ -30,7 +30,7 @@ public:
 
 private:
   const unordered_map<Opcode, disFun> opcode2dis = {
-      {ADD, &disassembler::disADD}};
+      {ADD, &Disassembler::disADD}};
 
   string disADD(instruction i) {
     string d = "ADD R" + to_string(i.DR) + ", R" + to_string(i.SR1);
