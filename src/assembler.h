@@ -9,15 +9,22 @@
 
 #include "instruction.h"
 
+struct Token {
+  std::string lexme;
+  int line;
+};
+
 class Assembler {
 public:
   std::vector<instruction> assemble(std::string filename);
 
 private:
-  std::vector<std::string> tokenize(const std::string &assembly);
+private:
+  std::vector<Token> tokenize(const std::string &assembly);
   bool isWhiteSpace(char c);
-  void firstPass(const std::vector<std::string> &tokens);
-  void secondPass(const std::vector<std::string> &tokens);
+  void firstPass(const std::vector<Token> &tokens);
+  void secondPass(const std::vector<Token> &tokens);
+  void error(std::string message, int line, const std::vector<Token> &tokens);
 
   std::vector<instruction> binaryData;
   std::unordered_map<std::string, int> symbolTable;

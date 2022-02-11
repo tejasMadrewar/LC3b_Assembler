@@ -1,4 +1,5 @@
 #include "assembler.h"
+#include <algorithm>
 #include <cctype>
 #include <ctype.h>
 #include <string>
@@ -13,11 +14,11 @@ vector<instruction> Assembler::assemble(string filename) {
 
   // read file
   if (file.is_open()) {
-    string assembly((std::istreambuf_iterator<char>(file)),
-                    std::istreambuf_iterator<char>());
+    string buffer((istreambuf_iterator<char>(file)),
+                  istreambuf_iterator<char>());
 
     // tokenize
-    auto tokens = tokenize(assembly);
+    auto tokens = tokenize(buffer);
 
     // run all passes
     firstPass(tokens);
@@ -29,18 +30,24 @@ vector<instruction> Assembler::assemble(string filename) {
   return binaryData;
 }
 
-vector<string> Assembler::tokenize(const std::string &assembly) {
-  vector<string> tokens;
+bool Assembler::isWhiteSpace(char c) { return isspace(c); }
+
+vector<Token> Assembler::tokenize(const std::string &buffer) {
+  vector<Token> tokens;
   enum state { START, READCHAR, SKIP, COMMA, COMMENT, DUMP };
 
-  int i = 0, j = 0;
-  char curChar = 0;
-  const int n = assembly.size();
+  int i = 0, j = 0, line = 1;
+
+  char curChar = 0, prevChar = 0;
+  const int n = buffer.size();
 
   state curState = START;
   while (i < n) {
     // read current character
-    curChar = assembly[i];
+    i > 0 ? prevChar = buffer[i - 1] : prevChar;
+    curChar = buffer[i];
+    if (prevChar == '\n')
+      line++;
 
     switch (curState) {
     case START:
@@ -100,9 +107,9 @@ vector<string> Assembler::tokenize(const std::string &assembly) {
       break;
 
     case DUMP:
-      auto t = assembly.substr(i - j, j);
+      auto t = buffer.substr(i - j, j);
       // cout << t << " ";
-      tokens.push_back(t);
+      tokens.push_back({t, line});
       j = 0;
       curState = START;
       break;
@@ -111,14 +118,19 @@ vector<string> Assembler::tokenize(const std::string &assembly) {
 
   // todo: add last token
 
-  cout << "Tokens\n";
-  for (auto &t : tokens)
-    cout << t << " ";
-
   return tokens;
 }
 
-void Assembler::firstPass(const vector<string> &tokens) {}
-void Assembler::secondPass(const vector<string> &tokens) {}
+void Assembler::error(string message, int line, const vector<Token> &tokens) {
 
-bool Assembler ::isWhiteSpace(char c) { return isspace(c); }
+  cerr << "\nError: " << message << " at line:" << line << "\n";
+  // print that line
+  for (auto t : tokens)
+    if (t.line == line)
+      cerr << t.lexme << " ";
+
+  exit(1);
+}
+
+void Assembler::firstPass(const vector<Token> &tokens) {}
+void Assembler::secondPass(const vector<Token> &tokens) {}
