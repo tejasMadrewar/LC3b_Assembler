@@ -11,7 +11,7 @@ using std::unordered_map;
 using std::vector;
 using std::string;
 
-#define opcode_data(d)\
+#define OPCODE_DATA(d)\
 d(ADD,  0b0001)\
 d(AND,  0b0101)\
 d(BR,   0b0000)\
@@ -32,52 +32,68 @@ d(STW,  0b0111)\
 d(TRAP, 0b1111)\
 d(XOR,  0b1001)
 
-#define register_data(d) \
-d(R0)\
-d(R1)\
-d(R2)\
-d(R3)\
-d(R4)\
-d(R5)\
-d(R6)\
-d(R7)\
-d(REG_COUNT)
+#define BR_DATA(d)\
+d(BRn,   0b0000)\
+d(BRz,   0b0000)\
+d(BRp,   0b0000)\
+d(BRzp,  0b0000)\
+d(BRnp,  0b0000)\
+d(BRnz,  0b0000)\
+d(BRnzp, 0b0000)
+
+#define REGISTER_DATA(d) \
+d(R0,0)\
+d(R1,1)\
+d(R2,2)\
+d(R3,3)\
+d(R4,4)\
+d(R5,5)\
+d(R6,6)\
+d(R7,7)
 
 //  clang-format on
 
 // Opcode enum
 #define e(a,b) a,
-enum Opcode{ opcode_data(e) };
+enum Opcode{ OPCODE_DATA(e) };
 #undef e
 
-// opcode str to hex value
+// opcode to hex value
 #define e(a,b) {a, b},
-const unordered_map<Opcode,uint16_t> op2hex ={ opcode_data(e)};
+const unordered_map<Opcode,uint16_t> op2hex ={ OPCODE_DATA(e)};
 #undef e
 
 // opcode enum to str
 #define e(a,b) #a,
-const vector<string> op2str ={ opcode_data(e)};
+const vector<string> op2str ={ OPCODE_DATA(e)};
 #undef e
 
-// opcode str to enum
+// opcode str to opcode enum
 #define e(a,b) {#a, a},
-const unordered_map<string,Opcode> str2op ={ opcode_data(e)};
+#define br(a,b) {#a, BR},
+const unordered_map<string,Opcode> str2op ={ OPCODE_DATA(e) BR_DATA(br)};
+#undef br
 #undef e
 
 // Register enum
-#define e(a) a,
-enum Register{ register_data(e) };
+#define e(a,b) a,
+enum Register{ REGISTER_DATA(e) };
 #undef e
 
+// Register to hex
+#define e(a,b) b,
+const vector<uint16_t> reg2hex ={ REGISTER_DATA(e)};
+#undef e
+
+
 // reg enum to str
-#define e(a)  #a,
-const vector<string> reg2str ={ register_data(e)};
+#define e(a,b)  #a,
+const vector<string> reg2str ={ REGISTER_DATA(e)};
 #undef e
 
 // reg str to enum
-#define e(a)  {#a,a},
-const unordered_map<string,Register> str2reg ={ register_data(e)};
+#define e(a,b)  {#a,a},
+const unordered_map<string,Register> str2reg ={ REGISTER_DATA(e)};
 #undef e
 
 
