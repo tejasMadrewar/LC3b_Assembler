@@ -9,7 +9,9 @@
 
 using namespace std;
 
-#define DEBUG_LOG(OPCODE) cout << "OPCODE -> " << bitset<16>(i.i) << "\n\n";
+#define DEBUG_LOG(OPCODE)                                                      \
+  tokenizer.printLine(loc, tokens);                                            \
+  cout << "OPCODE -> 0x" << hex << i.i << " -> " << bitset<16>(i.i) << "\n\n";
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
@@ -34,6 +36,8 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
 vector<instruction> Assembler::assemble(string filename) {
   ifstream file(filename);
+  auto outputFile = filename + ".bin";
+  ofstream ofile(outputFile);
 
   // remove previous data
   binaryData.clear();
@@ -41,9 +45,25 @@ vector<instruction> Assembler::assemble(string filename) {
 
   // read file
   if (file.is_open()) {
+    cout << "Reading from " << filename << " \n";
     string buffer((istreambuf_iterator<char>(file)),
                   istreambuf_iterator<char>());
     assembleBuffer(buffer);
+    // write data to output file
+    if (ofile.is_open()) {
+      cout << "Writing to " << outputFile << " \n";
+
+      // write size
+      // typename vector<instruction>::size_type size = binaryData.size();
+      // ofile.write((char *)&binaryData, sizeof(size));
+
+      // write data
+      ofile.write((char *)&binaryData[0],
+                  binaryData.size() * sizeof(instruction));
+
+    } else {
+      cout << "Unable to open file" << outputFile << "\n";
+    }
   } else {
     cout << "Unable to open file\n";
   }
@@ -114,7 +134,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
     // check for opcode
     auto f = str2op.find(t.lexme);
     if (f != str2op.end()) {
-      tokenizer.printLine(i, tokens);
+      // tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i, tokens);
       binaryData.push_back(inst);
     } else {
