@@ -9,32 +9,41 @@
 
 using namespace std;
 
-#define DEBUG_LOG(OPCODE) cout << "OPCODE -> " << bitset<16>(i.i) << "\n";
+#define DEBUG_LOG(OPCODE) cout << "OPCODE -> " << bitset<16>(i.i) << "\n\n";
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
   return os;
 }
 
-vector<instruction> Assembler::assemble(string filename) {
-  ifstream file(filename);
+vector<instruction> Assembler::assembleBuffer(string &buffer) {
   // remove previous data
   binaryData.clear();
   symbolTable.clear();
-  Tokenizer tokenizer;
+
+  // tokenize
+  auto tokens = tokenizer.tokenize(buffer);
+  tokenizer.printTokens(tokens);
+
+  // run all passes
+  firstPass(tokens);
+  secondPass(tokens);
+
+  return binaryData;
+}
+
+vector<instruction> Assembler::assemble(string filename) {
+  ifstream file(filename);
+
+  // remove previous data
+  binaryData.clear();
+  symbolTable.clear();
 
   // read file
   if (file.is_open()) {
     string buffer((istreambuf_iterator<char>(file)),
                   istreambuf_iterator<char>());
-
-    // tokenize
-    auto tokens = tokenizer.tokenize(buffer);
-    tokenizer.printTokens(tokens);
-
-    // run all passes
-    firstPass(tokens);
-    secondPass(tokens);
+    assembleBuffer(buffer);
   } else {
     cout << "Unable to open file\n";
   }
@@ -78,15 +87,16 @@ uint16_t Assembler::parseNumber(Token t) {
     number = strtoul(str.c_str(), NULL, 10);
   }
 
-  if (number == UINT16_MAX)
-    cerr << "invalid number " << t << "\n";
+  if (number == UINT16_MAX) {
+    // cerr << "invalid number " << t << "\n";
+  }
 
   return number;
 }
 
 Register Assembler::parseRegister(Token t, vector<Token> &tokens) {
-  Register r = R1;
 
+  Register r = R1;
   auto f = str2reg.find(t.lexme);
   if (f != str2reg.end()) {
     r = f->second;
@@ -104,7 +114,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
     // check for opcode
     auto f = str2op.find(t.lexme);
     if (f != str2op.end()) {
-      cout << "found " << f->first << "\n";
+      tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i, tokens);
       binaryData.push_back(inst);
     } else {
@@ -119,14 +129,17 @@ instruction Assembler::opcode2instruction(int &location,
 
   instruction i;
   auto token = tokens[location];
-  auto f = str2op.find(token.lexme);
 
-  if (f != str2op.end()) {
-    auto op = f->second;
+  auto opSearch = str2op.find(token.lexme);
+
+  if (opSearch != str2op.end()) {
+    // check all other instructions
+    auto op = opSearch->second;
 #define d(x, y)                                                                \
   case Opcode::x:                                                              \
     i = assemble##x(location, tokens);                                         \
     break;
+
     switch (op) {
       OPCODE_DATA(d)
     default:
@@ -139,10 +152,46 @@ instruction Assembler::opcode2instruction(int &location,
 
 void Assembler::secondPass(vector<Token> &tokens) {}
 
-instruction Assembler::assembleADD(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleADD(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "ADD") {
+    i.OP = op2hex.at(ADD);
+    loc++;
+    // first argument
+    auto r2 = parseRegister(tokens[loc], tokens);
+    i.DR = reg2hex[r2];
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // second argument
+    auto r3 = parseRegister(tokens[loc], tokens);
+    i.SR1 = reg2hex[r3];
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // third argument either register or 5 bit number
+    auto imm5 = parseNumber(tokens[loc]);
+    if (imm5 != UINT16_MAX) {
+      // third number
+      i.b5 = true;
+      i.IMM5 = imm5 & 0b11111;
+    } else {
+      // third register
+      auto r4 = parseRegister(tokens[loc], tokens);
+      i.SR2 = reg2hex[r4];
+      i.b5 = false;
+      i.b4 = false;
+      i.b3 = false;
+    }
+  }
+
+  DEBUG_LOG(ADD)
   return i;
 }
 
@@ -190,10 +239,31 @@ instruction Assembler::assembleAND(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleBR(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleBR(int &loc, vector<Token> &tokens) {
+
+#define m(a, b) {#a, b},
+  const unordered_map<string, uint16_t> br2mask = {BR_MASK(m)};
+#undef m
+
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  auto result = br2mask.find(t.lexme);
+  if (result != br2mask.end()) {
+    i.OP = op2hex.at(BR);
+    loc++;
+    auto mask = result->second;
+    i.n = (mask >> 2) & 0b1;
+    i.z = (mask >> 1) & 0b1;
+    i.p = (mask >> 0) & 0b1;
+    // first argument is symbolic
+    // PCoffset9
+    i.PCoffset9 = 0b111111111;
+  } else {
+    error("BR sub instruction not Implemnted", tokens[loc].line, tokens);
+  }
+
+  DEBUG_LOG(BR)
   return i;
 }
 
@@ -218,10 +288,37 @@ instruction Assembler::assembleJSRR(int &location, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleLDB(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleLDB(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "LDB") {
+    i.OP = op2hex.at(LDB);
+    loc++;
+    // first argument
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = reg2hex[dr] & 0b111;
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // second argument
+    auto baseR = parseRegister(tokens[loc], tokens);
+    i.BaseR = reg2hex[baseR] & 0b111;
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // third argument
+    auto boffset6 = parseNumber(tokens[loc]);
+    if (boffset6 != UINT16_MAX) {
+      i.boffset6 = boffset6 & 0b111111;
+    }
+  }
+
+  DEBUG_LOG(LDB)
   return i;
 }
 
@@ -282,10 +379,33 @@ instruction Assembler::assembleLEA(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleNOT(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+
+  if (t.lexme == "NOT") {
+    i.OP = op2hex.at(NOT);
+    loc++;
+    // first register
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = reg2hex[dr];
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+    // second argument
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.SR = reg2hex.at(sr);
+    i.b5 = true;
+    i.b4 = true;
+    i.b3 = true;
+    i.b2 = true;
+    i.b1 = true;
+    i.b0 = true;
+  }
+
+  DEBUG_LOG(NOT)
   return i;
 }
 

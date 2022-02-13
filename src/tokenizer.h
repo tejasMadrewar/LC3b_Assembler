@@ -101,7 +101,13 @@ public:
       }
     }
 
-    // todo: add last token
+    // add last token
+    if (j != 0) {
+      auto t = buffer.substr(i - j, j);
+      tokens.push_back({t, line});
+      j = 0;
+    }
+    // cout << "i :" << i << " j :" << j << " n" << n << " \n";
 
     return tokens;
   }
@@ -115,6 +121,14 @@ public:
       }
       cout << t.lexme << " ";
     }
+    cout << "\n";
+  }
+
+  void printLine(int location, std::vector<Token> &tokens) {
+    const auto line = tokens[location].line;
+    for (auto t : tokens)
+      if (t.line == line)
+        cout << t.lexme << " ";
     cout << "\n";
   }
 
