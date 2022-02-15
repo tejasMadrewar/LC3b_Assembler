@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#if 0
+#if 1
 #define DEBUG_LOG(OPCODE)                                                      \
   tokenizer.printLine(loc, tokens);                                            \
   cout << "OPCODE -> 0x" << hex << i.i << " -> " << bitset<16>(i.i) << "\n\n";
@@ -481,12 +481,7 @@ instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
     // second argument
     auto sr = parseRegister(tokens[loc], tokens);
     i.SR = reg2hex.at(sr);
-    i.b5 = true;
-    i.b4 = true;
-    i.b3 = true;
-    i.b2 = true;
-    i.b1 = true;
-    i.b0 = true;
+    i.IMM5 = 0b11111;
   }
 
   DEBUG_LOG(NOT)
