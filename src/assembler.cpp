@@ -22,6 +22,7 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
   // remove previous data
   binaryData.clear();
   symbolTable.clear();
+  patchLocations.clear();
 
   // tokenize
   auto tokens = tokenizer.tokenize(buffer);
@@ -42,6 +43,7 @@ vector<instruction> Assembler::assemble(string filename) {
   // remove previous data
   binaryData.clear();
   symbolTable.clear();
+  patchLocations.clear();
 
   // read file
   if (file.is_open()) {
@@ -137,6 +139,12 @@ void Assembler::firstPass(vector<Token> &tokens) {
       // tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i, tokens);
       binaryData.push_back(inst);
+      // save locations to patch
+      auto isInsPatched = labelInst2mask.find(f->second);
+      if (isInsPatched != labelInst2mask.end()) {
+        // save location
+        patchLocations.push_back({binaryData.size() - 1, f->second});
+      }
     } else {
       // add to symbol Table
       symbolTable[t.lexme] = binaryData.size();
@@ -167,6 +175,7 @@ instruction Assembler::opcode2instruction(int &location,
     }
 #undef d
   }
+
   return i;
 }
 
@@ -287,24 +296,75 @@ instruction Assembler::assembleBR(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleJMP(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleJMP(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "JMP") {
+    i.OP = op2hex.at(JMP);
+    // loc++;
+
+    loc++;
+    // first argument
+    auto r2 = parseRegister(tokens[loc], tokens);
+    i.BaseR = reg2hex[r2] & 0b111;
+
+    i.b11 = false;
+    i.b10 = false;
+    i.b9 = false;
+
+    i.b5 = false;
+    i.b4 = false;
+    i.b3 = false;
+    i.b2 = false;
+    i.b1 = false;
+    i.b0 = false;
+  }
+  DEBUG_LOG(JMP)
   return i;
 }
 
-instruction Assembler::assembleJSR(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleJSR(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "JSR") {
+    i.OP = op2hex.at(JSR);
+
+    // skip label
+    i.Poffset11 = 0b11111111111;
+    loc++;
+    i.b11 = true;
+  }
+
+  DEBUG_LOG(JSR)
   return i;
 }
 
-instruction Assembler::assembleJSRR(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleJSRR(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "JSRR") {
+    i.OP = op2hex.at(JSRR);
+
+    // first argument baseR
+    loc++;
+    auto baseR = parseRegister(tokens[loc], tokens);
+    i.BaseR = baseR & 0b111;
+
+    i.b11 = false;
+    i.b10 = false;
+    i.b9 = false;
+
+    i.b5 = false;
+    i.b4 = false;
+    i.b3 = false;
+    i.b2 = false;
+    i.b1 = false;
+    i.b0 = false;
+  }
+  DEBUG_LOG(JSRR)
   return i;
 }
 
@@ -429,24 +489,80 @@ instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleRET(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleRET(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "RET") {
+    i.OP = op2hex.at(RET);
+    i.BaseR = 0b111;
+
+    i.b11 = false;
+    i.b10 = false;
+    i.b9 = false;
+
+    i.b5 = false;
+    i.b4 = false;
+    i.b3 = false;
+    i.b2 = false;
+    i.b1 = false;
+    i.b0 = false;
+  }
+  DEBUG_LOG(RET)
   return i;
 }
 
-instruction Assembler::assembleRTI(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleRTI(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "RTI") {
+    i.OP = op2hex.at(RTI);
+
+    i.b11 = false;
+    i.b10 = false;
+    i.b9 = false;
+    i.b8 = false;
+    i.b7 = false;
+    i.b6 = false;
+    i.b5 = false;
+    i.b4 = false;
+    i.b3 = false;
+    i.b2 = false;
+    i.b1 = false;
+    i.b0 = false;
+  }
+  DEBUG_LOG(RTI)
   return i;
 }
 
-instruction Assembler::assembleLSHF(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleLSHF(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "LSHF") {
+    i.OP = op2hex.at(LSHF);
+
+    loc++;
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = dr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.SR = sr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto amount4 = parseRegister(tokens[loc], tokens);
+    i.amount4 = amount4 & 0b1111;
+  }
+
+  error("Not Implemnted", tokens[loc].line, tokens);
   return i;
 }
 

@@ -64,4 +64,11 @@ private:
 #define e(a, b) {Opcode::a, &Assembler::assemble##a},
   unordered_map<Opcode, fptrOp2Inst> op2assembly = {OPCODE_DATA(e)};
 #undef e
+
+  vector<std::pair<int, Opcode>> patchLocations;
+  unordered_map<Opcode, uint32_t> labelInst2mask = {
+      {Opcode::JSR, 0b11111111111},
+      {Opcode::LEA, 0b111111111},
+      {Opcode::BR, 0b111111111},
+  };
 };
