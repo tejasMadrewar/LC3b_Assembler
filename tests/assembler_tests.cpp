@@ -24,6 +24,9 @@ TEST_CASE("ADD tests") {
     REQUIRE(i.at(0).DR == 2);
     REQUIRE(i.at(0).SR1 == 3);
     REQUIRE(i.at(0).SR2 == 4);
+    REQUIRE(i.at(0).b5 == false);
+    REQUIRE(i.at(0).b4 == false);
+    REQUIRE(i.at(0).b3 == false);
   }
 
   i = assembler.assembleBuffer(test2);
@@ -35,6 +38,7 @@ TEST_CASE("ADD tests") {
     REQUIRE(i.at(0).DR == 2);
     REQUIRE(i.at(0).SR1 == 3);
     REQUIRE(i.at(0).IMM5 == 7);
+    REQUIRE(i.at(0).b5 == true);
   }
 }
 
@@ -256,7 +260,103 @@ TEST_CASE("RTI tests") {
 }
 
 TEST_CASE("SHF - bit shift tests") {
-  SECTION("LSHF") { string test = "LSHF R2,R3,#3"; }
-  SECTION("RSHFL") { string test = "RSHFL R2,R3,#7"; }
-  SECTION("RSHFA") { string test = "RSHFA R2,R3,#7"; }
+  SECTION("LSHF") {
+    string test = "LSHF R2,R3,#3";
+    auto i = assembler.assembleBuffer(test);
+
+    REQUIRE(i.size() == 1);
+    REQUIRE(i[0].OP == op2hex.at(LSHF));
+    REQUIRE(i[0].DR == 2);
+    REQUIRE(i[0].SR == 3);
+    REQUIRE(i[0].amount4 == 3);
+    REQUIRE(i[0].b4 == false);
+    REQUIRE(i[0].b5 == false);
+  }
+
+  SECTION("RSHFL") {
+    string test = "RSHFL R2,R3,#7";
+
+    auto i = assembler.assembleBuffer(test);
+
+    REQUIRE(i.size() == 1);
+    REQUIRE(i[0].OP == op2hex.at(LSHF));
+    REQUIRE(i[0].DR == 2);
+    REQUIRE(i[0].SR == 3);
+    REQUIRE(i[0].amount4 == 7);
+    REQUIRE(i[0].b4 == true);
+    REQUIRE(i[0].b5 == false);
+  }
+
+  SECTION("RSHFA") {
+    string test = "RSHFA R2,R3,#7";
+    auto i = assembler.assembleBuffer(test);
+
+    REQUIRE(i.size() == 1);
+    REQUIRE(i[0].OP == op2hex.at(LSHF));
+    REQUIRE(i[0].DR == 2);
+    REQUIRE(i[0].SR == 3);
+    REQUIRE(i[0].amount4 == 7);
+    REQUIRE(i[0].b4 == true);
+    REQUIRE(i[0].b5 == true);
+  }
+}
+
+TEST_CASE("STORE instructions tests") {
+  SECTION("STB - store byte") {
+    string test = "STB R4,R2,#10";
+    auto i = assembler.assembleBuffer(test);
+    REQUIRE(i[0].OP == op2hex.at(STB));
+    REQUIRE(i[0].ST.SR == 4);
+    REQUIRE(i[0].BaseR == 2);
+    REQUIRE(i[0].boffset6 == 10);
+
+    REQUIRE(i.size() == 1);
+  }
+
+  SECTION("STW - store byte") {
+    string test = "STW R4,R2,#10";
+    auto i = assembler.assembleBuffer(test);
+    REQUIRE(i[0].OP == op2hex.at(STW));
+    REQUIRE(i[0].ST.SR == 4);
+    REQUIRE(i[0].BaseR == 2);
+    REQUIRE(i[0].offset6 == 10);
+
+    REQUIRE(i.size() == 1);
+  }
+}
+
+TEST_CASE("TRAP instructions tests") {
+  SECTION("OS Call") {
+    string test = "TRAP x23";
+    auto i = assembler.assembleBuffer(test);
+    REQUIRE(i[0].OP == op2hex.at(TRAP));
+    REQUIRE(i[0].trapvect8 == 0x23);
+  }
+}
+
+TEST_CASE("XOR tests") {
+  string test1 = "XOR R3, R1, R2";
+  string test2 = "XOR R2, R1, #7";
+
+  SECTION(test1) {
+    auto i = assembler.assembleBuffer(test1);
+    REQUIRE(i.size() == 1);
+    REQUIRE(i.at(0).OP == op2hex.at(XOR));
+    REQUIRE(i.at(0).DR == 3);
+    REQUIRE(i.at(0).SR1 == 1);
+    REQUIRE(i.at(0).SR2 == 2);
+    REQUIRE(i.at(0).b5 == false);
+    REQUIRE(i.at(0).b4 == false);
+    REQUIRE(i.at(0).b3 == false);
+  }
+
+  SECTION(test2) {
+    auto i = assembler.assembleBuffer(test2);
+    REQUIRE(i.size() == 1);
+    REQUIRE(i.at(0).OP == op2hex.at(XOR));
+    REQUIRE(i.at(0).DR == 2);
+    REQUIRE(i.at(0).SR1 == 1);
+    REQUIRE(i.at(0).IMM5 == 7);
+    REQUIRE(i.at(0).b5 == true);
+  }
 }

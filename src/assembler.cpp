@@ -9,9 +9,13 @@
 
 using namespace std;
 
+#if 0
 #define DEBUG_LOG(OPCODE)                                                      \
   tokenizer.printLine(loc, tokens);                                            \
   cout << "OPCODE -> 0x" << hex << i.i << " -> " << bitset<16>(i.i) << "\n\n";
+#else
+#define DEBUG_LOG(OPCODE) ;
+#endif
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
@@ -558,39 +562,140 @@ instruction Assembler::assembleLSHF(int &loc, vector<Token> &tokens) {
     expect(",", loc, tokens, "Expected ','");
 
     loc++;
-    auto amount4 = parseRegister(tokens[loc], tokens);
+    auto amount4 = parseNumber(tokens[loc]);
     i.amount4 = amount4 & 0b1111;
+
+    i.b4 = false;
+    i.b5 = false;
   }
 
-  error("Not Implemnted", tokens[loc].line, tokens);
+  DEBUG_LOG(LSHF)
   return i;
 }
 
-instruction Assembler::assembleRSHFL(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleRSHFL(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "RSHFL") {
+    i.OP = op2hex.at(RSHFL);
+
+    loc++;
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = dr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.SR = sr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto amount4 = parseNumber(tokens[loc]);
+    i.amount4 = amount4 & 0b1111;
+
+    i.b4 = true;
+    i.b5 = false;
+  }
+
+  DEBUG_LOG(RSHFL)
   return i;
 }
 
-instruction Assembler::assembleRSHFA(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleRSHFA(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "RSHFA") {
+    i.OP = op2hex.at(RSHFA);
+
+    loc++;
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = dr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.SR = sr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto amount4 = parseNumber(tokens[loc]);
+    i.amount4 = amount4 & 0b1111;
+
+    i.b4 = true;
+    i.b5 = true;
+  }
+
+  DEBUG_LOG(RSHFA)
   return i;
 }
 
-instruction Assembler::assembleSTB(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleSTB(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "STB") {
+    i.OP = op2hex.at(STB);
+
+    loc++;
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.ST.SR = sr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto baseR = parseRegister(tokens[loc], tokens);
+    i.BaseR = baseR & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto boffset6 = parseNumber(tokens[loc]);
+    i.boffset6 = boffset6 & 0b1111;
+  }
+
+  DEBUG_LOG(STB)
   return i;
 }
 
-instruction Assembler::assembleSTW(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleSTW(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "STW") {
+    i.OP = op2hex.at(STW);
+
+    loc++;
+    auto sr = parseRegister(tokens[loc], tokens);
+    i.ST.SR = sr & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto baseR = parseRegister(tokens[loc], tokens);
+    i.BaseR = baseR & 0b111;
+
+    loc++;
+    expect(",", loc, tokens, "Expected ','");
+
+    loc++;
+    auto offset6 = parseNumber(tokens[loc]);
+    i.offset6 = offset6 & 0b1111;
+  }
+
+  DEBUG_LOG(STB)
   return i;
 }
 
@@ -614,9 +719,45 @@ instruction Assembler::assembleTRAP(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleXOR(int &location, vector<Token> &tokens) {
+instruction Assembler::assembleXOR(int &loc, vector<Token> &tokens) {
   instruction i;
   i.i = UINT16_MAX;
-  error("Not Implemnted", tokens[location].line, tokens);
+  auto t = tokens[loc];
+  if (t.lexme == "XOR") {
+    i.OP = op2hex.at(XOR);
+    loc++;
+    // first argument
+    auto dr = parseRegister(tokens[loc], tokens);
+    i.DR = reg2hex[dr];
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // second argument
+    auto sr1 = parseRegister(tokens[loc], tokens);
+    i.SR1 = reg2hex[sr1];
+    loc++;
+
+    expect(",", loc, tokens, "Expected ','");
+    loc++;
+
+    // third argument either register or 5 bit number
+    auto imm5 = parseNumber(tokens[loc]);
+    if (imm5 != UINT16_MAX) {
+      // third number
+      i.b5 = true;
+      i.IMM5 = imm5 & 0b11111;
+    } else {
+      // third register
+      auto sr2 = parseRegister(tokens[loc], tokens);
+      i.SR2 = reg2hex[sr2];
+      i.b5 = false;
+      i.b4 = false;
+      i.b3 = false;
+    }
+  }
+
+  DEBUG_LOG(ADD)
   return i;
 }
