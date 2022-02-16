@@ -1,4 +1,5 @@
 #include "assembler.h"
+#include "opcode_data.h"
 
 #include <algorithm>
 #include <cctype>
@@ -132,6 +133,14 @@ Register Assembler::parseRegister(Token t, vector<Token> &tokens) {
   return r;
 }
 
+string Assembler::parseString(Token t, vector<Token> &tokens) {
+  string str;
+
+  error("String parsing not implemented", t.line, tokens);
+  error("Expected string at ", t.line, tokens);
+  return str;
+}
+
 void Assembler::firstPass(vector<Token> &tokens) {
 
   for (int i = 0; i < tokens.size(); i++) {
@@ -139,6 +148,8 @@ void Assembler::firstPass(vector<Token> &tokens) {
 
     // check for opcode
     auto f = str2op.find(t.lexme);
+    // check for directive
+    auto d = str2dir.find(t.lexme);
     if (f != str2op.end()) {
       // tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i, tokens);
@@ -148,6 +159,39 @@ void Assembler::firstPass(vector<Token> &tokens) {
       if (isInsPatched != labelInst2mask.end()) {
         // save location
         patchLocations.push_back({binaryData.size() - 1, f->second});
+      }
+    }
+    if (d != str2dir.end()) {
+      // save location and directive
+      auto dir = d->second;
+      switch (dir) {
+
+      case END: {
+        directiveInfo info;
+        info.directive = dir;
+      }
+
+      case ORIG:
+      case FILL:
+      case BLKW: {
+        directiveInfo info;
+        info.directive = dir;
+        i++;
+        info.number = parseNumber(tokens[i]);
+
+        if (info.number == UINT16_MAX) {
+          error("Expected number", tokens[i].line, tokens);
+        }
+        directives.push_back(info);
+      }
+
+      case STRINGZ: {
+        directiveInfo info;
+        info.directive = dir;
+        i++;
+        info.str = parseString(tokens[i], tokens);
+        directives.push_back(info);
+      }
       }
     } else {
       // add to symbol Table

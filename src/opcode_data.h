@@ -51,6 +51,13 @@ d(R5,5)\
 d(R6,6)\
 d(R7,7)
 
+#define DIRECTIVE_DATA(d)\
+d(ORIG)\
+d(FILL) \
+d(BLKW) \
+d(STRINGZ)\
+d(END)
+
 //  clang-format on
 
 // Opcode enum
@@ -96,6 +103,21 @@ const vector<string> reg2str ={ REGISTER_DATA(e)};
 const unordered_map<string,Register> str2reg ={ REGISTER_DATA(e)};
 #undef e
 
+// Directive enum
+#define e(a) a,
+enum Directive{ DIRECTIVE_DATA(e) };
+#undef e
+
+// directive str to enum
+#define e(a)  {"."#a, a},
+const unordered_map<string,Directive> str2dir ={ DIRECTIVE_DATA(e)};
+#undef e
+
+struct directiveInfo{
+	Directive directive;
+	string str;
+	uint16_t number;
+};
 
 #if 0
 #define BMASK(n) ((1 << n) - 1)

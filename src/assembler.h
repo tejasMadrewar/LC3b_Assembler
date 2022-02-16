@@ -31,6 +31,7 @@ private:
 
   uint16_t parseNumber(Token t);
   Register parseRegister(Token t, vector<Token> &tokens);
+  string parseString(Token t, vector<Token> &tokens);
 
 private:
   instruction opcode2instruction(int &location, vector<Token> &tokens);
@@ -66,6 +67,7 @@ private:
 #undef e
 
   vector<std::pair<int, Opcode>> patchLocations;
+  vector<directiveInfo> directives;
   unordered_map<Opcode, uint32_t> labelInst2mask = {
       {Opcode::JSR, 0b11111111111},
       {Opcode::LEA, 0b111111111},
