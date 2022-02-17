@@ -30,12 +30,12 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
   patchLocations.clear();
 
   // tokenize
-  auto tokens = tokenizer.tokenize(buffer);
+  tokens = tokenizer.tokenize(buffer);
   tokenizer.printTokens(tokens);
 
   // run all passes
-  firstPass(tokens);
-  secondPass(tokens);
+  firstPass();
+  secondPass();
 
   return binaryData;
 }
@@ -78,7 +78,7 @@ vector<instruction> Assembler::assemble(string filename) {
   return binaryData;
 }
 
-void Assembler::error(string message, int line, vector<Token> &tokens) {
+void Assembler::error(string message, int line) {
 
   cout << "\nError: " << message;
   cout << " at line:" << line << "\n";
@@ -90,11 +90,10 @@ void Assembler::error(string message, int line, vector<Token> &tokens) {
   exit(1);
 }
 
-void Assembler::expect(string expected, int location, vector<Token> &tokens,
-                       string erMsg) {
+void Assembler::expect(string expected, int location, string erMsg) {
   const auto &t = tokens[location];
   if (t.lexme != expected) {
-    error(erMsg, t.line, tokens);
+    error(erMsg, t.line);
   }
 }
 
@@ -121,27 +120,27 @@ uint16_t Assembler::parseNumber(Token t) {
   return number;
 }
 
-Register Assembler::parseRegister(Token t, vector<Token> &tokens) {
+Register Assembler::parseRegister(Token t) {
 
   Register r = R1;
   auto f = str2reg.find(t.lexme);
   if (f != str2reg.end()) {
     r = f->second;
   } else {
-    error("Expected register at ", t.line, tokens);
+    error("Expected register at ", t.line);
   }
   return r;
 }
 
-string Assembler::parseString(Token t, vector<Token> &tokens) {
+string Assembler::parseString(Token t) {
   string str;
 
-  error("String parsing not implemented", t.line, tokens);
-  error("Expected string at ", t.line, tokens);
+  error("String parsing not implemented", t.line);
+  error("Expected string at ", t.line);
   return str;
 }
 
-void Assembler::firstPass(vector<Token> &tokens) {
+void Assembler::firstPass() {
 
   for (int i = 0; i < tokens.size(); i++) {
     auto t = tokens[i];
@@ -152,7 +151,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
     auto d = str2dir.find(t.lexme);
     if (f != str2op.end()) {
       // tokenizer.printLine(i, tokens);
-      auto inst = opcode2instruction(i, tokens);
+      auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
       // save locations to patch
       auto isInsPatched = labelInst2mask.find(f->second);
@@ -180,7 +179,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
         info.number = parseNumber(tokens[i]);
 
         if (info.number == UINT16_MAX) {
-          error("Expected number", tokens[i].line, tokens);
+          error("Expected number", tokens[i].line);
         }
         directives.push_back(info);
       }
@@ -189,7 +188,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
         directiveInfo info;
         info.directive = dir;
         i++;
-        info.str = parseString(tokens[i], tokens);
+        info.str = parseString(tokens[i]);
         directives.push_back(info);
       }
       }
@@ -200,8 +199,7 @@ void Assembler::firstPass(vector<Token> &tokens) {
   }
 }
 
-instruction Assembler::opcode2instruction(int &location,
-                                          vector<Token> &tokens) {
+instruction Assembler::opcode2instruction(int &location) {
 
   instruction i;
   auto token = tokens[location];
@@ -213,7 +211,7 @@ instruction Assembler::opcode2instruction(int &location,
     auto op = opSearch->second;
 #define d(x, y)                                                                \
   case Opcode::x:                                                              \
-    i = assemble##x(location, tokens);                                         \
+    i = assemble##x(location);                                                 \
     break;
 
     switch (op) {
@@ -227,9 +225,9 @@ instruction Assembler::opcode2instruction(int &location,
   return i;
 }
 
-void Assembler::secondPass(vector<Token> &tokens) {}
+void Assembler::secondPass() {}
 
-instruction Assembler::assembleADD(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleADD(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -237,19 +235,19 @@ instruction Assembler::assembleADD(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(ADD);
     loc++;
     // first argument
-    auto r2 = parseRegister(tokens[loc], tokens);
+    auto r2 = parseRegister(tokens[loc]);
     i.DR = reg2hex[r2];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // second argument
-    auto r3 = parseRegister(tokens[loc], tokens);
+    auto r3 = parseRegister(tokens[loc]);
     i.SR1 = reg2hex[r3];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // third argument either register or 5 bit number
@@ -260,7 +258,7 @@ instruction Assembler::assembleADD(int &loc, vector<Token> &tokens) {
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto r4 = parseRegister(tokens[loc], tokens);
+      auto r4 = parseRegister(tokens[loc]);
       i.SR2 = reg2hex[r4];
       i.b5 = false;
       i.b4 = false;
@@ -272,7 +270,7 @@ instruction Assembler::assembleADD(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleAND(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleAND(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
 
@@ -281,19 +279,19 @@ instruction Assembler::assembleAND(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(AND);
     loc++;
     // first register
-    auto r2 = parseRegister(tokens[loc], tokens);
+    auto r2 = parseRegister(tokens[loc]);
     i.DR = reg2hex[r2];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // second register
-    auto r3 = parseRegister(tokens[loc], tokens);
+    auto r3 = parseRegister(tokens[loc]);
     i.SR1 = reg2hex[r3];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // third argument either register or 5 bit number
@@ -304,7 +302,7 @@ instruction Assembler::assembleAND(int &loc, vector<Token> &tokens) {
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto r4 = parseRegister(tokens[loc], tokens);
+      auto r4 = parseRegister(tokens[loc]);
       i.SR2 = reg2hex[r4];
       i.b5 = false;
       i.b4 = false;
@@ -316,7 +314,7 @@ instruction Assembler::assembleAND(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleBR(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleBR(int &loc) {
 
 #define m(a, b) {#a, b},
   const unordered_map<string, uint16_t> br2mask = {BR_MASK(m)};
@@ -337,14 +335,14 @@ instruction Assembler::assembleBR(int &loc, vector<Token> &tokens) {
     // PCoffset9
     i.PCoffset9 = 0b111111111;
   } else {
-    error("BR sub instruction not Implemnted", tokens[loc].line, tokens);
+    error("BR sub instruction not Implemnted", tokens[loc].line);
   }
 
   DEBUG_LOG(BR)
   return i;
 }
 
-instruction Assembler::assembleJMP(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleJMP(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -354,7 +352,7 @@ instruction Assembler::assembleJMP(int &loc, vector<Token> &tokens) {
 
     loc++;
     // first argument
-    auto r2 = parseRegister(tokens[loc], tokens);
+    auto r2 = parseRegister(tokens[loc]);
     i.BaseR = reg2hex[r2] & 0b111;
 
     i.b11 = false;
@@ -372,7 +370,7 @@ instruction Assembler::assembleJMP(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleJSR(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleJSR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -389,7 +387,7 @@ instruction Assembler::assembleJSR(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleJSRR(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleJSRR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -398,7 +396,7 @@ instruction Assembler::assembleJSRR(int &loc, vector<Token> &tokens) {
 
     // first argument baseR
     loc++;
-    auto baseR = parseRegister(tokens[loc], tokens);
+    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = baseR & 0b111;
 
     i.b11 = false;
@@ -416,7 +414,7 @@ instruction Assembler::assembleJSRR(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleLDB(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleLDB(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -424,19 +422,19 @@ instruction Assembler::assembleLDB(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(LDB);
     loc++;
     // first argument
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = reg2hex[dr] & 0b111;
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // second argument
-    auto baseR = parseRegister(tokens[loc], tokens);
+    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = reg2hex[baseR] & 0b111;
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // third argument
@@ -450,7 +448,7 @@ instruction Assembler::assembleLDB(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleLDW(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleLDW(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -458,19 +456,19 @@ instruction Assembler::assembleLDW(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(LDW);
     loc++;
     // first register
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = reg2hex[dr];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // second register
-    auto baseR = parseRegister(tokens[loc], tokens);
+    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = reg2hex[baseR];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // third argument
@@ -484,7 +482,7 @@ instruction Assembler::assembleLDW(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleLEA(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleLEA(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -492,11 +490,11 @@ instruction Assembler::assembleLEA(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(LEA);
     loc++;
     // first register
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = reg2hex[dr];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
     // third argument is symbolic writed in second pass
     i.PCoffset9 = 0b111111111;
@@ -507,7 +505,7 @@ instruction Assembler::assembleLEA(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleNOT(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -516,14 +514,14 @@ instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(NOT);
     loc++;
     // first register
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = reg2hex[dr];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
     // second argument
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.SR = reg2hex.at(sr);
     i.IMM5 = 0b11111;
   }
@@ -532,7 +530,7 @@ instruction Assembler::assembleNOT(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleRET(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleRET(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -555,7 +553,7 @@ instruction Assembler::assembleRET(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleRTI(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleRTI(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -579,7 +577,7 @@ instruction Assembler::assembleRTI(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleLSHF(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleLSHF(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -587,18 +585,18 @@ instruction Assembler::assembleLSHF(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(LSHF);
 
     loc++;
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = dr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
     auto amount4 = parseNumber(tokens[loc]);
@@ -612,7 +610,7 @@ instruction Assembler::assembleLSHF(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleRSHFL(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleRSHFL(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -620,18 +618,18 @@ instruction Assembler::assembleRSHFL(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(RSHFL);
 
     loc++;
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = dr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
     auto amount4 = parseNumber(tokens[loc]);
@@ -645,7 +643,7 @@ instruction Assembler::assembleRSHFL(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleRSHFA(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleRSHFA(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -653,18 +651,18 @@ instruction Assembler::assembleRSHFA(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(RSHFA);
 
     loc++;
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = dr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
     auto amount4 = parseNumber(tokens[loc]);
@@ -678,7 +676,7 @@ instruction Assembler::assembleRSHFA(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleSTB(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleSTB(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -686,18 +684,18 @@ instruction Assembler::assembleSTB(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(STB);
 
     loc++;
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.ST.SR = sr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
-    auto baseR = parseRegister(tokens[loc], tokens);
+    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = baseR & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
     auto boffset6 = parseNumber(tokens[loc]);
@@ -708,7 +706,7 @@ instruction Assembler::assembleSTB(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleSTW(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleSTW(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -716,18 +714,18 @@ instruction Assembler::assembleSTW(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(STW);
 
     loc++;
-    auto sr = parseRegister(tokens[loc], tokens);
+    auto sr = parseRegister(tokens[loc]);
     i.ST.SR = sr & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
-    auto baseR = parseRegister(tokens[loc], tokens);
+    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = baseR & 0b111;
 
     loc++;
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
 
     loc++;
     auto offset6 = parseNumber(tokens[loc]);
@@ -738,7 +736,7 @@ instruction Assembler::assembleSTW(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleTRAP(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleTRAP(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -758,7 +756,7 @@ instruction Assembler::assembleTRAP(int &loc, vector<Token> &tokens) {
   return i;
 }
 
-instruction Assembler::assembleXOR(int &loc, vector<Token> &tokens) {
+instruction Assembler::assembleXOR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
   auto t = tokens[loc];
@@ -766,19 +764,19 @@ instruction Assembler::assembleXOR(int &loc, vector<Token> &tokens) {
     i.OP = op2hex.at(XOR);
     loc++;
     // first argument
-    auto dr = parseRegister(tokens[loc], tokens);
+    auto dr = parseRegister(tokens[loc]);
     i.DR = reg2hex[dr];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // second argument
-    auto sr1 = parseRegister(tokens[loc], tokens);
+    auto sr1 = parseRegister(tokens[loc]);
     i.SR1 = reg2hex[sr1];
     loc++;
 
-    expect(",", loc, tokens, "Expected ','");
+    expect(",", loc, "Expected ','");
     loc++;
 
     // third argument either register or 5 bit number
@@ -789,7 +787,7 @@ instruction Assembler::assembleXOR(int &loc, vector<Token> &tokens) {
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto sr2 = parseRegister(tokens[loc], tokens);
+      auto sr2 = parseRegister(tokens[loc]);
       i.SR2 = reg2hex[sr2];
       i.b5 = false;
       i.b4 = false;
