@@ -140,6 +140,23 @@ string Assembler::parseString(Token t) {
   return str;
 }
 
+void Assembler::parseRegRegNum(int &loc, Register &r1, Register &r2,
+                               uint16_t &num) {
+  r1 = parseRegister(tokens[loc]);
+  loc++;
+
+  expect(",", loc, "Expected ','");
+
+  loc++;
+  r2 = parseRegister(tokens[loc]);
+
+  loc++;
+  expect(",", loc, "Expected ','");
+
+  loc++;
+  num = parseNumber(tokens[loc]);
+}
+
 void Assembler::firstPass() {
 
   for (int i = 0; i < tokens.size(); i++) {
@@ -203,7 +220,6 @@ instruction Assembler::opcode2instruction(int &location) {
 
   instruction i;
   auto token = tokens[location];
-
   auto opSearch = str2op.find(token.lexme);
 
   if (opSearch != str2op.end()) {
@@ -230,8 +246,7 @@ void Assembler::secondPass() {}
 instruction Assembler::assembleADD(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "ADD") {
+  if (tokens[loc].lexme == "ADD") {
     i.OP = op2hex.at(ADD);
     loc++;
     // first argument
@@ -274,8 +289,7 @@ instruction Assembler::assembleAND(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
 
-  auto t = tokens[loc];
-  if (t.lexme == "AND") {
+  if (tokens[loc].lexme == "AND") {
     i.OP = op2hex.at(AND);
     loc++;
     // first register
@@ -345,8 +359,7 @@ instruction Assembler::assembleBR(int &loc) {
 instruction Assembler::assembleJMP(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "JMP") {
+  if (tokens[loc].lexme == "JMP") {
     i.OP = op2hex.at(JMP);
     // loc++;
 
@@ -373,8 +386,7 @@ instruction Assembler::assembleJMP(int &loc) {
 instruction Assembler::assembleJSR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "JSR") {
+  if (tokens[loc].lexme == "JSR") {
     i.OP = op2hex.at(JSR);
 
     // skip label
@@ -390,8 +402,7 @@ instruction Assembler::assembleJSR(int &loc) {
 instruction Assembler::assembleJSRR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "JSRR") {
+  if (tokens[loc].lexme == "JSRR") {
     i.OP = op2hex.at(JSRR);
 
     // first argument baseR
@@ -416,29 +427,16 @@ instruction Assembler::assembleJSRR(int &loc) {
 
 instruction Assembler::assembleLDB(int &loc) {
   instruction i;
+  Register dr, baseR;
+  uint16_t boffset6;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "LDB") {
+  if (tokens[loc].lexme == "LDB") {
     i.OP = op2hex.at(LDB);
     loc++;
-    // first argument
-    auto dr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, dr, baseR, boffset6);
     i.DR = reg2hex[dr] & 0b111;
-    loc++;
-
-    expect(",", loc, "Expected ','");
-    loc++;
-
-    // second argument
-    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = reg2hex[baseR] & 0b111;
-    loc++;
-
-    expect(",", loc, "Expected ','");
-    loc++;
-
-    // third argument
-    auto boffset6 = parseNumber(tokens[loc]);
     if (boffset6 != UINT16_MAX) {
       i.boffset6 = boffset6 & 0b111111;
     }
@@ -450,34 +448,20 @@ instruction Assembler::assembleLDB(int &loc) {
 
 instruction Assembler::assembleLDW(int &loc) {
   instruction i;
+  Register dr, baseR;
+  uint16_t boffset6;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "LDW") {
+  if (tokens[loc].lexme == "LDW") {
     i.OP = op2hex.at(LDW);
     loc++;
-    // first register
-    auto dr = parseRegister(tokens[loc]);
-    i.DR = reg2hex[dr];
-    loc++;
 
-    expect(",", loc, "Expected ','");
-    loc++;
-
-    // second register
-    auto baseR = parseRegister(tokens[loc]);
-    i.BaseR = reg2hex[baseR];
-    loc++;
-
-    expect(",", loc, "Expected ','");
-    loc++;
-
-    // third argument
-    auto offset6 = parseNumber(tokens[loc]);
-    if (offset6 != UINT16_MAX) {
-      i.offset6 = offset6 & 0b111111;
+    parseRegRegNum(loc, dr, baseR, boffset6);
+    i.DR = reg2hex[dr] & 0b111;
+    i.BaseR = reg2hex[baseR] & 0b111;
+    if (boffset6 != UINT16_MAX) {
+      i.boffset6 = boffset6 & 0b111111;
     }
   }
-  // error("Not Implemnted", tokens[location].line, tokens);
   DEBUG_LOG(LDW)
   return i;
 }
@@ -485,8 +469,7 @@ instruction Assembler::assembleLDW(int &loc) {
 instruction Assembler::assembleLEA(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "LEA") {
+  if (tokens[loc].lexme == "LEA") {
     i.OP = op2hex.at(LEA);
     loc++;
     // first register
@@ -508,9 +491,8 @@ instruction Assembler::assembleLEA(int &loc) {
 instruction Assembler::assembleNOT(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
 
-  if (t.lexme == "NOT") {
+  if (tokens[loc].lexme == "NOT") {
     i.OP = op2hex.at(NOT);
     loc++;
     // first register
@@ -533,8 +515,7 @@ instruction Assembler::assembleNOT(int &loc) {
 instruction Assembler::assembleRET(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "RET") {
+  if (tokens[loc].lexme == "RET") {
     i.OP = op2hex.at(RET);
     i.BaseR = 0b111;
 
@@ -556,8 +537,7 @@ instruction Assembler::assembleRET(int &loc) {
 instruction Assembler::assembleRTI(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "RTI") {
+  if (tokens[loc].lexme == "RTI") {
     i.OP = op2hex.at(RTI);
 
     i.b11 = false;
@@ -579,27 +559,16 @@ instruction Assembler::assembleRTI(int &loc) {
 
 instruction Assembler::assembleLSHF(int &loc) {
   instruction i;
+  Register dr, sr;
+  uint16_t amount4;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "LSHF") {
+  if (tokens[loc].lexme == "LSHF") {
     i.OP = op2hex.at(LSHF);
-
     loc++;
-    auto dr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, dr, sr, amount4);
     i.DR = dr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto amount4 = parseNumber(tokens[loc]);
     i.amount4 = amount4 & 0b1111;
 
     i.b4 = false;
@@ -612,27 +581,16 @@ instruction Assembler::assembleLSHF(int &loc) {
 
 instruction Assembler::assembleRSHFL(int &loc) {
   instruction i;
+  Register dr, sr;
+  uint16_t amount4;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "RSHFL") {
+  if (tokens[loc].lexme == "RSHFL") {
     i.OP = op2hex.at(RSHFL);
-
     loc++;
-    auto dr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, dr, sr, amount4);
     i.DR = dr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto amount4 = parseNumber(tokens[loc]);
     i.amount4 = amount4 & 0b1111;
 
     i.b4 = true;
@@ -645,27 +603,16 @@ instruction Assembler::assembleRSHFL(int &loc) {
 
 instruction Assembler::assembleRSHFA(int &loc) {
   instruction i;
+  Register dr, sr;
+  uint16_t amount4;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "RSHFA") {
+  if (tokens[loc].lexme == "RSHFA") {
     i.OP = op2hex.at(RSHFA);
-
     loc++;
-    auto dr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, dr, sr, amount4);
     i.DR = dr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto sr = parseRegister(tokens[loc]);
     i.SR = sr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto amount4 = parseNumber(tokens[loc]);
     i.amount4 = amount4 & 0b1111;
 
     i.b4 = true;
@@ -678,27 +625,16 @@ instruction Assembler::assembleRSHFA(int &loc) {
 
 instruction Assembler::assembleSTB(int &loc) {
   instruction i;
+  Register sr, baseR;
+  uint16_t boffset6;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "STB") {
+  if (tokens[loc].lexme == "STB") {
     i.OP = op2hex.at(STB);
-
     loc++;
-    auto sr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, sr, baseR, boffset6);
     i.ST.SR = sr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = baseR & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto boffset6 = parseNumber(tokens[loc]);
     i.boffset6 = boffset6 & 0b1111;
   }
 
@@ -708,27 +644,17 @@ instruction Assembler::assembleSTB(int &loc) {
 
 instruction Assembler::assembleSTW(int &loc) {
   instruction i;
+  Register sr, baseR;
+  uint16_t offset6;
+
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "STW") {
+  if (tokens[loc].lexme == "STW") {
     i.OP = op2hex.at(STW);
-
     loc++;
-    auto sr = parseRegister(tokens[loc]);
+
+    parseRegRegNum(loc, sr, baseR, offset6);
     i.ST.SR = sr & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto baseR = parseRegister(tokens[loc]);
     i.BaseR = baseR & 0b111;
-
-    loc++;
-    expect(",", loc, "Expected ','");
-
-    loc++;
-    auto offset6 = parseNumber(tokens[loc]);
     i.offset6 = offset6 & 0b1111;
   }
 
@@ -739,8 +665,7 @@ instruction Assembler::assembleSTW(int &loc) {
 instruction Assembler::assembleTRAP(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "TRAP") {
+  if (tokens[loc].lexme == "TRAP") {
     i.OP = op2hex.at(TRAP);
     loc++;
     // first number
@@ -759,8 +684,7 @@ instruction Assembler::assembleTRAP(int &loc) {
 instruction Assembler::assembleXOR(int &loc) {
   instruction i;
   i.i = UINT16_MAX;
-  auto t = tokens[loc];
-  if (t.lexme == "XOR") {
+  if (tokens[loc].lexme == "XOR") {
     i.OP = op2hex.at(XOR);
     loc++;
     // first argument

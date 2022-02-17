@@ -8,7 +8,11 @@ https://github.com/pepaslabs/LC-3b-disassembler
 # contains lc3 assembler and lc3 docs
 https://github.com/pepaslabs/lc3as.py
 
+# impelemnt lc3
+https://justinmeiners.github.io/lc3-vm
+
 https://github.com/pepaslabs/crenshaw-lets-build-a-compiler
+https://cs.brynmawr.edu/Courses/cs240/fall2013/highlevelprogramming.html
 
 # art of struct packing
 http://www.catb.org/esr/structure-packing/

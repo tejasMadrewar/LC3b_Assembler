@@ -21,7 +21,6 @@ public:
   vector<instruction> assembleBuffer(string &buffer);
 
 private:
-private:
   void firstPass();
   void secondPass();
 
@@ -31,10 +30,9 @@ private:
   uint16_t parseNumber(Token t);
   Register parseRegister(Token t);
   string parseString(Token t);
+  void parseRegRegNum(int &loc, Register &r1, Register &r2, uint16_t &num);
 
-private:
   instruction opcode2instruction(int &location);
-  typedef instruction (Assembler::*fptrOp2Inst)(int &location);
 
   instruction assembleADD(int &location);
   instruction assembleAND(int &location);
@@ -57,13 +55,11 @@ private:
   instruction assembleXOR(int &location);
 
 private:
+  typedef instruction (Assembler::*fptrOp2Inst)(int &location);
   vector<instruction> binaryData;
   unordered_map<string, int> symbolTable;
   Tokenizer tokenizer;
   vector<Token> tokens = {};
-#define e(a, b) {Opcode::a, &Assembler::assemble##a},
-  unordered_map<Opcode, fptrOp2Inst> op2assembly = {OPCODE_DATA(e)};
-#undef e
 
   vector<std::pair<int, Opcode>> patchLocations;
   vector<directiveInfo> directives;
