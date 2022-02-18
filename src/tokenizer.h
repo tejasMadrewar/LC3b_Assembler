@@ -17,7 +17,7 @@ class Tokenizer {
 public:
   vector<Token> tokenize(string &buffer) {
     vector<Token> tokens;
-    enum state { START, READCHAR, SKIP, COMMA, COMMENT, DUMP };
+    enum state { START, READCHAR, STRING, SKIP, COMMA, COMMENT, DUMP };
 
     int i = 0, j = 0, line = 1, prevNewline = 0;
 
@@ -38,12 +38,14 @@ public:
       case START:
         if (curChar == ';') {
           curState = COMMENT;
-          break;
         } else if (curChar == ',') {
           curState = COMMA;
+        } else if (curChar == '"') {
+          i++;
+          j++;
+          curState = STRING;
         } else if (isWhiteSpace(curChar)) {
           curState = SKIP;
-          break;
         } else {
           // cout << curChar;
           // i++;
@@ -91,6 +93,17 @@ public:
         }
         break;
 
+      case STRING:
+        if (curChar == '"') {
+          i++;
+          j++;
+          curState = DUMP;
+        } else {
+          i++;
+          j++;
+        }
+
+        break;
       case DUMP:
         auto t = buffer.substr(i - j, j);
         // cout << t << " ";

@@ -1,16 +1,15 @@
 #pragma once
 
-// clang-format off
-// d(OPCODE_NAME,OPCODE_VALUE)
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include<unordered_map>
-#include<string>
-#include<vector>
-
+using std::string;
 using std::unordered_map;
 using std::vector;
-using std::string;
 
+// clang-format off
+// d(OPCODE_NAME,OPCODE_VALUE)
 #define OPCODE_DATA(d)\
 d(ADD,  0b0001)\
 d(AND,  0b0101)\
@@ -53,11 +52,28 @@ d(R7,7)
 
 #define DIRECTIVE_DATA(d)\
 d(ORIG)\
-d(FILL) \
-d(BLKW) \
+d(FILL)\
+d(BLKW)\
 d(STRINGZ)\
 d(END)
 
+#define DISASSEMBLY_DATA(d)\
+d(ADD)\
+d(AND)\
+d(BR)\
+d(JMP)\
+d(JSR)\
+d(LDB)\
+d(LDW)\
+d(LEA)\
+d(RTI)\
+d(STB)\
+d(STW)\
+d(TRAP)\
+d(XOR)\
+d(LSHF)\
+d(RSHFL)\
+d(RSHFA)
 //  clang-format on
 
 // Opcode enum
@@ -118,6 +134,11 @@ struct directiveInfo{
 	string str;
 	uint16_t number;
 };
+
+// disassembly data
+#define d(a) {op2hex.at(a), a},
+const unordered_map<uint16_t, Opcode> hex2op = { DISASSEMBLY_DATA(d) };
+#undef d
 
 #if 0
 #define BMASK(n) ((1 << n) - 1)

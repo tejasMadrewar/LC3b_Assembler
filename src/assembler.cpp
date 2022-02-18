@@ -111,6 +111,9 @@ uint16_t Assembler::parseNumber(Token t) {
     auto s = t.lexme.length();
     auto str = t.lexme.substr(1, s - 1);
     number = strtoul(str.c_str(), NULL, 10);
+  } else if (t.lexme.find_first_not_of("0123456789") == string::npos) {
+    // number
+    number = stoi(t.lexme);
   }
 
   if (number == UINT16_MAX) {
@@ -135,8 +138,14 @@ Register Assembler::parseRegister(Token t) {
 string Assembler::parseString(Token t) {
   string str;
 
-  error("String parsing not implemented", t.line);
-  error("Expected string at ", t.line);
+  const int n = t.lexme.length();
+  // check for valid string
+  if (t.lexme[0] == '"' and t.lexme[n - 1] == '"') {
+    // cout << "valid: " << t.lexme << "->" << t.line << "\n";
+  } else {
+    // cout << "Invalid: " << t.lexme << "\n";
+    error("Not vaild string", t.line);
+  }
   return str;
 }
 
@@ -176,8 +185,7 @@ void Assembler::firstPass() {
         // save location
         patchLocations.push_back({binaryData.size() - 1, f->second});
       }
-    }
-    if (d != str2dir.end()) {
+    } else if (d != str2dir.end()) {
       // save location and directive
       auto dir = d->second;
       switch (dir) {
@@ -185,6 +193,7 @@ void Assembler::firstPass() {
       case END: {
         directiveInfo info;
         info.directive = dir;
+        break;
       }
 
       case ORIG:
@@ -199,6 +208,7 @@ void Assembler::firstPass() {
           error("Expected number", tokens[i].line);
         }
         directives.push_back(info);
+        break;
       }
 
       case STRINGZ: {
@@ -207,6 +217,7 @@ void Assembler::firstPass() {
         i++;
         info.str = parseString(tokens[i]);
         directives.push_back(info);
+        break;
       }
       }
     } else {
@@ -241,7 +252,12 @@ instruction Assembler::opcode2instruction(int &location) {
   return i;
 }
 
-void Assembler::secondPass() {}
+void Assembler::secondPass() {
+  cout << "Labels \n";
+  for (auto s : symbolTable) {
+    cout << "Label: " << s.first << " -> " << s.second << "\n";
+  }
+}
 
 instruction Assembler::assembleADD(int &loc) {
   instruction i;

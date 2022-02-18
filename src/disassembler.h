@@ -11,6 +11,7 @@
 using namespace std;
 
 class Disassembler {
+
 public:
   typedef string (Disassembler::*disFun)(instruction i);
 
@@ -20,22 +21,88 @@ public:
     }
   }
 
+  inline bool isRegValid(Register r) { return (r >= R0 and r <= R7); }
+
+  inline string stringOpNum(string &op, uint16_t num) {
+    return op + " " + std::to_string(num);
+  }
+
+  inline string stringOpRegReg(string &op, Register r1, Register r2) {
+    return op + " " + reg2str[r1] + ", " + reg2str[r2];
+  }
+
+  inline string stringOpRegNum(string &op, Register r1, uint16_t num) {
+    return op + " " + reg2str[r1] + ", " + std::to_string(num);
+  }
+
+  inline string stringOpRegRegNum(string &op, Register r1, Register r2,
+                                  uint16_t num) {
+    return op + " " + reg2str[r1] + ", " + reg2str[r2] + ", " +
+           std::to_string(num);
+  }
+
   string disInst(instruction i) {
 
-    Opcode o = Opcode(i.OP);
-    auto dis = opcode2dis.find(o);
+    auto opSearch = hex2op.find(i.OP);
+    if (opSearch == hex2op.end()) {
+      cout << "Unknown instruction" << hex << i.i << "\n";
+      exit(0);
+    }
+    auto op = opSearch->second;
+    // auto dis = opcode2dis.find(o);
 
-    return "";
+    switch (op) {
+    case ADD:
+      return disADD(i);
+    case AND:
+      return disAND(i);
+    case BR:
+      return disBR(i);
+    case JMP:
+    case RET:
+      return disJMP(i);
+    case JSR:
+    case JSRR:
+      return disJSR(i);
+    case LDB:
+      return disLDB(i);
+    case LDW:
+      return disLDW(i);
+    case LEA:
+      return disLEA(i);
+    case RTI:
+      return disRTI(i);
+    case LSHF:
+    case RSHFL:
+    case RSHFA:
+      return disSHF(i);
+    case STB:
+      return disSTB(i);
+    case STW:
+      return disSTW(i);
+    case TRAP:
+      return disTRAP(i);
+    case XOR:
+    case NOT:
+      return disXOR(i);
+    }
+
+    return "Not implemented";
   }
 
 private:
-  const unordered_map<Opcode, disFun> opcode2dis = {
-      {ADD, &Disassembler::disADD}};
-
-  string disADD(instruction i) {
-    string d = "ADD R" + to_string(i.DR) + ", R" + to_string(i.SR1);
-    (i.b5) ? d = d + ", #" + to_string(i.IMM5)
-           : d = d + ", R" + to_string(i.SR2);
-    return d;
-  }
+  string disADD(instruction i);
+  string disAND(instruction i);
+  string disBR(instruction i);
+  string disJMP(instruction i);
+  string disJSR(instruction i);
+  string disLDB(instruction i);
+  string disLDW(instruction i);
+  string disLEA(instruction i);
+  string disRTI(instruction i);
+  string disSHF(instruction i);
+  string disSTB(instruction i);
+  string disSTW(instruction i);
+  string disTRAP(instruction i);
+  string disXOR(instruction i);
 };
