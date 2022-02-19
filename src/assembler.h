@@ -11,10 +11,6 @@
 #include "opcode_data.h"
 #include "tokenizer.h"
 
-#define BR_MASK(d)                                                             \
-  d(BR, 0b000) d(BRn, 0b100) d(BRz, 0b010) d(BRp, 0b001) d(BRzp, 0b011)        \
-      d(BRnp, 0b101) d(BRnz, 0b110) d(BRnzp, 0b111)
-
 class Assembler {
 public:
   vector<instruction> assemble(string filename);

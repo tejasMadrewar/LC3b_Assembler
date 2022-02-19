@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -9,6 +10,12 @@
 #include "opcode_data.h"
 
 using namespace std;
+
+template <typename T> std::string int_to_hex(T i) {
+  std::stringstream stream;
+  stream << "0x" << std::hex << i;
+  return stream.str();
+}
 
 class Disassembler {
 
@@ -20,75 +27,7 @@ public:
       cout << disInst(i) << "\n";
     }
   }
-
-  inline bool isRegValid(Register r) { return (r >= R0 and r <= R7); }
-
-  inline string stringOpNum(string &op, uint16_t num) {
-    return op + " " + std::to_string(num);
-  }
-
-  inline string stringOpRegReg(string &op, Register r1, Register r2) {
-    return op + " " + reg2str[r1] + ", " + reg2str[r2];
-  }
-
-  inline string stringOpRegNum(string &op, Register r1, uint16_t num) {
-    return op + " " + reg2str[r1] + ", " + std::to_string(num);
-  }
-
-  inline string stringOpRegRegNum(string &op, Register r1, Register r2,
-                                  uint16_t num) {
-    return op + " " + reg2str[r1] + ", " + reg2str[r2] + ", " +
-           std::to_string(num);
-  }
-
-  string disInst(instruction i) {
-
-    auto opSearch = hex2op.find(i.OP);
-    if (opSearch == hex2op.end()) {
-      cout << "Unknown instruction" << hex << i.i << "\n";
-      exit(0);
-    }
-    auto op = opSearch->second;
-    // auto dis = opcode2dis.find(o);
-
-    switch (op) {
-    case ADD:
-      return disADD(i);
-    case AND:
-      return disAND(i);
-    case BR:
-      return disBR(i);
-    case JMP:
-    case RET:
-      return disJMP(i);
-    case JSR:
-    case JSRR:
-      return disJSR(i);
-    case LDB:
-      return disLDB(i);
-    case LDW:
-      return disLDW(i);
-    case LEA:
-      return disLEA(i);
-    case RTI:
-      return disRTI(i);
-    case LSHF:
-    case RSHFL:
-    case RSHFA:
-      return disSHF(i);
-    case STB:
-      return disSTB(i);
-    case STW:
-      return disSTW(i);
-    case TRAP:
-      return disTRAP(i);
-    case XOR:
-    case NOT:
-      return disXOR(i);
-    }
-
-    return "Not implemented";
-  }
+  string disInst(instruction i);
 
 private:
   string disADD(instruction i);
@@ -105,4 +44,36 @@ private:
   string disSTW(instruction i);
   string disTRAP(instruction i);
   string disXOR(instruction i);
+  inline bool isRegValid(Register r) { return (r >= R0 and r <= R7); }
+
+  inline string stringOpN(const string &op, uint16_t num) {
+    return op + " " + int_to_hex(num);
+  }
+
+  inline string stringOpR(const string &op, Register r1) {
+    return op + " " + reg2str[r1];
+  }
+
+  inline string stringOpRR(const string &op, Register r1, Register r2) {
+    return op + " " + reg2str[r1] + ", " + reg2str[r2];
+  }
+
+  inline string stringOpRRR(const string &op, Register r1, Register r2,
+                            Register r3) {
+    return op + " " + reg2str[r1] + ", " + reg2str[r2] + ", " + reg2str[r3];
+  }
+
+  inline string stringOpRN(const string &op, Register r1, uint16_t num) {
+    return op + " " + reg2str[r1] + ", " + int_to_hex(num);
+  }
+
+  inline string stringOpRRN(const string &op, Register r1, Register r2,
+                            uint16_t num) {
+    return op + " " + reg2str[r1] + ", " + reg2str[r2] + ", " + int_to_hex(num);
+  }
+
+private:
+#define x(a, b) {b, #a},
+  const unordered_map<uint32_t, string> mask2br = {BR_MASK(x)};
+#undef x
 };

@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#if 1
+#if 0
 #define DEBUG_LOG(OPCODE)                                                      \
   tokenizer.printLine(loc, tokens);                                            \
   cout << "OPCODE -> 0x" << hex << i.i << " -> " << bitset<16>(i.i) << "\n\n";
@@ -31,7 +31,7 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
   // tokenize
   tokens = tokenizer.tokenize(buffer);
-  tokenizer.printTokens(tokens);
+  // tokenizer.printTokens(tokens);
 
   // run all passes
   firstPass();

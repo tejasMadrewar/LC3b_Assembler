@@ -14,7 +14,9 @@ int main(int argc, char **argv) {
   Disassembler dis;
 
 #if 1
-  as.assemble("examples/sample.asm");
+  auto a = as.assemble("examples/sample.asm");
+  cout << "Disassembly\n";
+  dis.disassemble(a);
   // as.assemble("examples/DIRECTIVE_sample.asm");
 #else
 
