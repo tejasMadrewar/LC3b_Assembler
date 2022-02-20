@@ -31,7 +31,7 @@ db:
 clean:
 	if exist $(OBJDIR) rmdir /s /q $(OBJDIR)
 	if exist .cache rmdir /s /q .cache
-	del *.pdb *.ilk *.bin compile_commands.json $(EXE)
+	del *.pdb *.ilk examples\*.bin compile_commands.json $(EXE)
 
 $(DEPDIR): ; mkdir $@
 

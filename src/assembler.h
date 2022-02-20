@@ -19,6 +19,7 @@ public:
 private:
   void firstPass();
   void secondPass();
+  void writeToFile(vector<instruction> data, string filename);
 
   void error(string erMsg, int line);
   void expect(string expected, int location, string erMsg);
@@ -49,6 +50,13 @@ private:
   instruction assembleSTW(int &location);
   instruction assembleTRAP(int &location);
   instruction assembleXOR(int &location);
+
+  vector<instruction> directive2instructions(int &location);
+
+  vector<instruction> assembleORIG(int &location);
+  vector<instruction> assembleFILL(int &location);
+  vector<instruction> assembleBLKW(int &location);
+  vector<instruction> assembleSTRINGZ(int &location);
 
 private:
   typedef instruction (Assembler::*fptrOp2Inst)(int &location);

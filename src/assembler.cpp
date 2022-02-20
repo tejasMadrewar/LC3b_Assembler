@@ -14,8 +14,16 @@ using namespace std;
 #define DEBUG_LOG(OPCODE)                                                      \
   tokenizer.printLine(loc, tokens);                                            \
   cout << "OPCODE -> 0x" << hex << i.i << " -> " << bitset<16>(i.i) << "\n\n";
+
+#define DEBUG_LOG_DIR(DIRECTIVE)                                               \
+  tokenizer.printLine(loc, tokens);                                            \
+  for (auto d : data)                                                          \
+    cout << #DIRECTIVE " -> 0x" << hex << d.i << " -> " << bitset<16>(d.i)     \
+         << "\n";                                                              \
+  cout << "\n";
 #else
 #define DEBUG_LOG(OPCODE) ;
+#define DEBUG_LOG_DIR(DIRECTIVE) ;
 #endif
 
 ostream &operator<<(ostream &os, Token &t) {
@@ -57,6 +65,8 @@ vector<instruction> Assembler::assemble(string filename) {
                   istreambuf_iterator<char>());
     assembleBuffer(buffer);
     // write data to output file
+    writeToFile(binaryData, outputFile);
+#if 0
     if (ofile.is_open()) {
       cout << "Writing to " << outputFile << " \n";
 
@@ -71,6 +81,7 @@ vector<instruction> Assembler::assemble(string filename) {
     } else {
       cout << "Unable to open file" << outputFile << "\n";
     }
+#endif
   } else {
     cout << "Unable to open file\n";
   }
@@ -141,7 +152,9 @@ string Assembler::parseString(Token t) {
   const int n = t.lexme.length();
   // check for valid string
   if (t.lexme[0] == '"' and t.lexme[n - 1] == '"') {
-    // cout << "valid: " << t.lexme << "->" << t.line << "\n";
+    auto n = t.lexme.length();
+    str = t.lexme.substr(1, n - 2);
+    // cout << "Parsed string : (" << str.length() << ") " << str << "\n";
   } else {
     // cout << "Invalid: " << t.lexme << "\n";
     error("Not vaild string", t.line);
@@ -176,6 +189,7 @@ void Assembler::firstPass() {
     // check for directive
     auto d = str2dir.find(t.lexme);
     if (f != str2op.end()) {
+      // opcode
       // tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
@@ -186,40 +200,9 @@ void Assembler::firstPass() {
         patchLocations.push_back({binaryData.size() - 1, f->second});
       }
     } else if (d != str2dir.end()) {
-      // save location and directive
-      auto dir = d->second;
-      switch (dir) {
-
-      case END: {
-        directiveInfo info;
-        info.directive = dir;
-        break;
-      }
-
-      case ORIG:
-      case FILL:
-      case BLKW: {
-        directiveInfo info;
-        info.directive = dir;
-        i++;
-        info.number = parseNumber(tokens[i]);
-
-        if (info.number == UINT16_MAX) {
-          error("Expected number", tokens[i].line);
-        }
-        directives.push_back(info);
-        break;
-      }
-
-      case STRINGZ: {
-        directiveInfo info;
-        info.directive = dir;
-        i++;
-        info.str = parseString(tokens[i]);
-        directives.push_back(info);
-        break;
-      }
-      }
+      // directive
+      auto data = directive2instructions(i);
+      binaryData.insert(binaryData.end(), data.begin(), data.end());
     } else {
       // add to symbol Table
       symbolTable[t.lexme] = binaryData.size();
@@ -252,10 +235,63 @@ instruction Assembler::opcode2instruction(int &location) {
   return i;
 }
 
+vector<instruction> Assembler::directive2instructions(int &location) {
+  vector<instruction> data = {};
+
+  auto token = tokens[location];
+  auto directiveSearch = str2dir.find(token.lexme);
+
+  if (directiveSearch != str2dir.end()) {
+    auto dir = directiveSearch->second;
+
+    switch (dir) {
+    case ORIG:
+      data = assembleORIG(location);
+      break;
+    case FILL:
+      data = assembleFILL(location);
+      break;
+    case BLKW:
+      data = assembleBLKW(location);
+      break;
+    case STRINGZ:
+      data = assembleSTRINGZ(location);
+      break;
+    case END:
+      break;
+    default:
+      error("Directive not implemneted\n", token.line);
+    }
+  }
+
+  return data;
+}
+
 void Assembler::secondPass() {
   cout << "Labels \n";
   for (auto s : symbolTable) {
     cout << "Label: " << s.first << " -> " << s.second << "\n";
+  }
+}
+
+void Assembler::writeToFile(vector<instruction> data, string outputFile) {
+  fstream ofile(outputFile);
+  auto endianAdjusted = data;
+
+  // change to big endianess
+  for (auto &i : endianAdjusted) {
+    auto c1 = i.c1;
+    i.c1 = i.c2;
+    i.c2 = c1;
+  }
+
+  // write data
+  if (ofile.is_open()) {
+    cout << "Writing to " << outputFile << " \n";
+    ofile.write((char *)&endianAdjusted[0],
+                endianAdjusted.size() * sizeof(instruction));
+  } else {
+    cout << "Unable to open file" << outputFile << "\n";
   }
 }
 
@@ -737,4 +773,108 @@ instruction Assembler::assembleXOR(int &loc) {
 
   DEBUG_LOG(ADD)
   return i;
+}
+
+vector<instruction> Assembler::assembleORIG(int &loc) {
+  vector<instruction> data;
+  directiveInfo info;
+
+  if (tokens[loc].lexme == ".ORIG") {
+    info.directive = ORIG;
+    loc++;
+    info.number = parseNumber(tokens[loc]);
+
+    if (info.number == UINT16_MAX) {
+      error("Expected number", tokens[loc].line);
+    }
+
+    directives.push_back(info);
+  }
+  DEBUG_LOG_DIR(ORIG)
+  return data;
+}
+
+vector<instruction> Assembler::assembleFILL(int &loc) {
+  vector<instruction> data;
+  directiveInfo info;
+
+  if (tokens[loc].lexme == ".FILL") {
+    info.directive = FILL;
+    loc++;
+    info.number = parseNumber(tokens[loc]);
+
+    if (info.number == UINT16_MAX) {
+      error("Expected number", tokens[loc].line);
+    }
+    directives.push_back(info);
+
+    instruction i;
+    i.i = info.number;
+    data.push_back(i);
+  }
+
+  DEBUG_LOG_DIR(FILL)
+  return data;
+}
+
+vector<instruction> Assembler::assembleBLKW(int &loc) {
+  vector<instruction> data;
+  directiveInfo info;
+
+  if (tokens[loc].lexme == ".BLKW") {
+    directiveInfo info;
+    instruction i;
+    info.directive = BLKW;
+    loc++;
+    info.number = parseNumber(tokens[loc]);
+
+    if (info.number == UINT16_MAX) {
+      error("Expected number", tokens[loc].line);
+    }
+    directives.push_back(info);
+
+    i.i = 0;
+    data.resize(info.number, i);
+  }
+
+  DEBUG_LOG_DIR(BLKW)
+  return data;
+}
+
+vector<instruction> Assembler::assembleSTRINGZ(int &loc) {
+  vector<instruction> data;
+
+  if (tokens[loc].lexme == ".STRINGZ") {
+    instruction i, a;
+    i.i = 0;
+    directiveInfo info;
+    info.directive = STRINGZ;
+
+    loc++;
+    info.str = parseString(tokens[loc]);
+    directives.push_back(info);
+
+    const auto n = info.str.length();
+
+    // save data upto last even length
+    for (int j = 0; j < n / 2; j++) {
+      a.c1 = info.str[j * 2 + 0];
+      a.c2 = info.str[j * 2 + 1];
+      data.push_back(a);
+    }
+
+    if (n % 2 == 1) {
+      // last odd char
+      a.c1 = info.str[n - 1];
+      a.c2 = 0;
+      data.push_back(a);
+    } else {
+      a.c1 = 0;
+      a.c2 = 0;
+      data.push_back(a);
+    }
+  }
+
+  DEBUG_LOG_DIR(STRINGZ)
+  return data;
 }

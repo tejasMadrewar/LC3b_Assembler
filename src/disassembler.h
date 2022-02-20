@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -23,8 +24,16 @@ public:
   typedef string (Disassembler::*disFun)(instruction i);
 
   void disassemble(vector<instruction> program) {
-    for (auto i : program) {
-      cout << disInst(i) << "\n";
+    // for (auto i : program) {
+    for (int i = 0; i < program.size(); i++) {
+      auto inst = program[i];
+      // offset
+      cout << "0x" << hex << std::setfill('0') << std::setw(4) << (i * 2)
+           << " ";
+      // hex
+      cout << "0x" << hex << std::setfill('0') << std::setw(4) << inst.i << " ";
+      // opcode
+      cout << disInst(inst) << "\n";
     }
   }
   string disInst(instruction i);

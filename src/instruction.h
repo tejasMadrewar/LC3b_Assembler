@@ -81,5 +81,10 @@ struct instruction {
       bool b14 : 1;
       bool b15 : 1;
     };
+
+    struct {
+      char c2;
+      char c1;
+    };
   };
 };
