@@ -65,11 +65,8 @@ private:
   Tokenizer tokenizer;
   vector<Token> tokens = {};
 
-  vector<std::pair<int, Opcode>> patchLocations;
+  vector<std::pair<int, string>> patchLocations;
   vector<directiveInfo> directives;
-  unordered_map<Opcode, uint32_t> labelInst2mask = {
-      {Opcode::JSR, 0b11111111111},
-      {Opcode::LEA, 0b111111111},
-      {Opcode::BR, 0b111111111},
-  };
+  static const unordered_map<Opcode, uint32_t> labelInst2mask;
 };
+

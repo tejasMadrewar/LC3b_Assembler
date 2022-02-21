@@ -4,6 +4,28 @@
 
 // todo: handle negative number
 #define mask(n, size) (n & ((1 << size) - 1))
+
+#define x(a, b) {b, #a},
+const unordered_map<uint32_t, string> Disassembler::mask2br = {BR_MASK(x)};
+#undef x
+
+ostream &operator<<(ostream &os, const instruction &i) {
+  Disassembler d;
+  os << d.disInst(i);
+  return os;
+}
+
+void Disassembler::disassemble(vector<instruction> program) {
+  for (int i = 0; i < program.size(); i++) {
+    auto inst = program[i];
+    // offset
+    cout << "0x" << hex << std::setfill('0') << std::setw(4) << (i * 2) << " ";
+    // hex
+    cout << "0x" << hex << std::setfill('0') << std::setw(4) << inst.i << " ";
+    // opcode
+    cout << disInst(inst) << "\n";
+  }
+}
 string Disassembler::disInst(instruction i) {
 
   auto opSearch = hex2op.find(i.OP);

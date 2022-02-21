@@ -26,10 +26,11 @@ using namespace std;
 #define DEBUG_LOG_DIR(DIRECTIVE) ;
 #endif
 
-ostream &operator<<(ostream &os, Token &t) {
-  os << t.lexme;
-  return os;
-}
+const unordered_map<Opcode, uint32_t> Assembler::labelInst2mask = {
+    {Opcode::JSR, 0b11111111111},
+    {Opcode::LEA, 0b111111111},
+    {Opcode::BR, 0b111111111},
+};
 
 vector<instruction> Assembler::assembleBuffer(string &buffer) {
   // remove previous data
@@ -66,22 +67,6 @@ vector<instruction> Assembler::assemble(string filename) {
     assembleBuffer(buffer);
     // write data to output file
     writeToFile(binaryData, outputFile);
-#if 0
-    if (ofile.is_open()) {
-      cout << "Writing to " << outputFile << " \n";
-
-      // write size
-      // typename vector<instruction>::size_type size = binaryData.size();
-      // ofile.write((char *)&binaryData, sizeof(size));
-
-      // write data
-      ofile.write((char *)&binaryData[0],
-                  binaryData.size() * sizeof(instruction));
-
-    } else {
-      cout << "Unable to open file" << outputFile << "\n";
-    }
-#endif
   } else {
     cout << "Unable to open file\n";
   }
@@ -197,7 +182,7 @@ void Assembler::firstPass() {
       auto isInsPatched = labelInst2mask.find(f->second);
       if (isInsPatched != labelInst2mask.end()) {
         // save location
-        patchLocations.push_back({binaryData.size() - 1, f->second});
+        patchLocations.push_back({binaryData.size() - 1, tokens[i].lexme});
       }
     } else if (d != str2dir.end()) {
       // directive
@@ -268,9 +253,43 @@ vector<instruction> Assembler::directive2instructions(int &location) {
 }
 
 void Assembler::secondPass() {
+#if 0
   cout << "Labels \n";
-  for (auto s : symbolTable) {
-    cout << "Label: " << s.first << " -> " << s.second << "\n";
+  for (auto s : symbolTable)
+    cout << "Label: " << s.first << " -> 0x" << hex << (s.second * 2) << "\n";
+#endif
+
+  for (const auto &l : patchLocations) {
+    auto &inst = binaryData[l.first];
+    auto opcode = inst.OP;
+    // cout << "Patch location: " << (l.first * 2) << " -> " << l.second <<
+    // "\n";
+
+    switch (opcode) {
+      // BRANCH
+    case 0b0000: {
+      auto address = symbolTable.find(l.second);
+      if (address != symbolTable.end()) {
+        inst.PCoffset9 = address->second * 2;
+      }
+    } break;
+      // JSR
+    case 0b0100: {
+      if (inst.b11) {
+        auto address = symbolTable.find(l.second);
+        if (address != symbolTable.end()) {
+          inst.Poffset11 = address->second * 2;
+        }
+      }
+    } break;
+      // LEA
+    case 0b1110: {
+      auto address = symbolTable.find(l.second);
+      if (address != symbolTable.end()) {
+        inst.PCoffset9 = address->second * 2;
+      }
+    } break;
+    }
   }
 }
 
@@ -487,8 +506,8 @@ instruction Assembler::assembleLDB(int &loc) {
     loc++;
 
     parseRegRegNum(loc, dr, baseR, boffset6);
-    i.DR = reg2hex[dr] & 0b111;
-    i.BaseR = reg2hex[baseR] & 0b111;
+    i.DR = dr & 0b111;
+    i.BaseR = baseR & 0b111;
     if (boffset6 != UINT16_MAX) {
       i.boffset6 = boffset6 & 0b111111;
     }
@@ -508,8 +527,8 @@ instruction Assembler::assembleLDW(int &loc) {
     loc++;
 
     parseRegRegNum(loc, dr, baseR, boffset6);
-    i.DR = reg2hex[dr] & 0b111;
-    i.BaseR = reg2hex[baseR] & 0b111;
+    i.DR = dr & 0b111;
+    i.BaseR = baseR & 0b111;
     if (boffset6 != UINT16_MAX) {
       i.boffset6 = boffset6 & 0b111111;
     }
@@ -526,16 +545,15 @@ instruction Assembler::assembleLEA(int &loc) {
     loc++;
     // first register
     auto dr = parseRegister(tokens[loc]);
-    i.DR = reg2hex[dr];
+    i.DR = dr & 0b111;
     loc++;
 
     expect(",", loc, "Expected ','");
     loc++;
-    // third argument is symbolic writed in second pass
+    // third argument is written in second pass
     i.PCoffset9 = 0b111111111;
   }
 
-  // error("Not Implemnted", tokens[location].line, tokens);
   DEBUG_LOG(LEA)
   return i;
 }
@@ -549,14 +567,14 @@ instruction Assembler::assembleNOT(int &loc) {
     loc++;
     // first register
     auto dr = parseRegister(tokens[loc]);
-    i.DR = reg2hex[dr];
+    i.DR = dr;
     loc++;
 
     expect(",", loc, "Expected ','");
     loc++;
     // second argument
     auto sr = parseRegister(tokens[loc]);
-    i.SR = reg2hex.at(sr);
+    i.SR = sr & 0b111;
     i.IMM5 = 0b11111;
   }
 
@@ -741,7 +759,7 @@ instruction Assembler::assembleXOR(int &loc) {
     loc++;
     // first argument
     auto dr = parseRegister(tokens[loc]);
-    i.DR = reg2hex[dr];
+    i.DR = dr & 0b111;
     loc++;
 
     expect(",", loc, "Expected ','");
@@ -749,7 +767,7 @@ instruction Assembler::assembleXOR(int &loc) {
 
     // second argument
     auto sr1 = parseRegister(tokens[loc]);
-    i.SR1 = reg2hex[sr1];
+    i.SR1 = sr1 & 0b111;
     loc++;
 
     expect(",", loc, "Expected ','");
@@ -764,7 +782,7 @@ instruction Assembler::assembleXOR(int &loc) {
     } else {
       // third register
       auto sr2 = parseRegister(tokens[loc]);
-      i.SR2 = reg2hex[sr2];
+      i.SR2 = sr2 & 0b111;
       i.b5 = false;
       i.b4 = false;
       i.b3 = false;
