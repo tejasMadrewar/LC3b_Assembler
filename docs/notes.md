@@ -8,6 +8,9 @@ https://github.com/pepaslabs/LC-3b-disassembler
 # contains lc3 assembler and lc3 docs
 https://github.com/pepaslabs/lc3as.py
 
+# course c to lc3
+https://www.cs.colostate.edu/~cs270/.Spring22/index.php
+
 # implement lc3
 https://justinmeiners.github.io/lc3-vm
 

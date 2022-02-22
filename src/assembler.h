@@ -21,12 +21,12 @@ private:
   void secondPass();
   void writeToFile(vector<instruction> data, string filename);
 
-  void error(string erMsg, int line);
+  void error(string erMsg, int location);
   void expect(string expected, int location, string erMsg);
 
-  uint16_t parseNumber(Token t);
-  Register parseRegister(Token t);
-  string parseString(Token t);
+  uint16_t parseNumber(int location);
+  Register parseRegister(int location);
+  string parseString(int location);
   void parseRegRegNum(int &loc, Register &r1, Register &r2, uint16_t &num);
 
   instruction opcode2instruction(int &location);
@@ -69,4 +69,3 @@ private:
   vector<directiveInfo> directives;
   static const unordered_map<Opcode, uint32_t> labelInst2mask;
 };
-

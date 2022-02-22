@@ -74,14 +74,16 @@ vector<instruction> Assembler::assemble(string filename) {
   return binaryData;
 }
 
-void Assembler::error(string message, int line) {
+void Assembler::error(string message, int loc) {
 
+  auto t = tokens[loc];
   cout << "\nError: " << message;
-  cout << " at line:" << line << "\n";
+  cout << " at line:" << t.line;
+  cout << " on word:" << t.col << "\n";
   // print that line
-  for (auto t : tokens)
-    if (t.line == line)
-      cout << t.lexme << " ";
+  for (auto i : tokens)
+    if (i.line == t.line)
+      cout << i.lexme << " ";
 
   exit(1);
 }
@@ -89,12 +91,13 @@ void Assembler::error(string message, int line) {
 void Assembler::expect(string expected, int location, string erMsg) {
   const auto &t = tokens[location];
   if (t.lexme != expected) {
-    error(erMsg, t.line);
+    error(erMsg, location);
   }
 }
 
-uint16_t Assembler::parseNumber(Token t) {
+uint16_t Assembler::parseNumber(int loc) {
   uint16_t number = UINT16_MAX;
+  auto &t = tokens[loc];
 
   if (t.lexme[0] == 'x') {
     // hex
@@ -114,25 +117,30 @@ uint16_t Assembler::parseNumber(Token t) {
 
   if (number == UINT16_MAX) {
     // cerr << "invalid number " << t << "\n";
+  } else {
+    t.type = TokenType::NUM;
   }
 
   return number;
 }
 
-Register Assembler::parseRegister(Token t) {
+Register Assembler::parseRegister(int loc) {
+  auto &t = tokens[loc];
 
   Register r = R1;
   auto f = str2reg.find(t.lexme);
   if (f != str2reg.end()) {
     r = f->second;
+    t.type = TokenType::REG;
   } else {
-    error("Expected register at ", t.line);
+    error("Expected register at ", loc);
   }
   return r;
 }
 
-string Assembler::parseString(Token t) {
+string Assembler::parseString(int loc) {
   string str;
+  auto &t = tokens[loc];
 
   const int n = t.lexme.length();
   // check for valid string
@@ -142,26 +150,26 @@ string Assembler::parseString(Token t) {
     // cout << "Parsed string : (" << str.length() << ") " << str << "\n";
   } else {
     // cout << "Invalid: " << t.lexme << "\n";
-    error("Not vaild string", t.line);
+    error("Not vaild string", loc);
   }
   return str;
 }
 
 void Assembler::parseRegRegNum(int &loc, Register &r1, Register &r2,
                                uint16_t &num) {
-  r1 = parseRegister(tokens[loc]);
+  r1 = parseRegister(loc);
   loc++;
 
   expect(",", loc, "Expected ','");
 
   loc++;
-  r2 = parseRegister(tokens[loc]);
+  r2 = parseRegister(loc);
 
   loc++;
   expect(",", loc, "Expected ','");
 
   loc++;
-  num = parseNumber(tokens[loc]);
+  num = parseNumber(loc);
 }
 
 void Assembler::firstPass() {
@@ -176,6 +184,7 @@ void Assembler::firstPass() {
     if (f != str2op.end()) {
       // opcode
       // tokenizer.printLine(i, tokens);
+      tokens[i].type = TokenType::OP;
       auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
       // save locations to patch
@@ -186,13 +195,16 @@ void Assembler::firstPass() {
       }
     } else if (d != str2dir.end()) {
       // directive
+      tokens[i].type = TokenType::DIRECTIVE;
       auto data = directive2instructions(i);
       binaryData.insert(binaryData.end(), data.begin(), data.end());
     } else {
       // add to symbol Table
+      tokens[i].type = TokenType::LABEL;
       symbolTable[t.lexme] = binaryData.size();
     }
   }
+  // tokenizer.printTokens(tokens);
 }
 
 instruction Assembler::opcode2instruction(int &location) {
@@ -245,7 +257,7 @@ vector<instruction> Assembler::directive2instructions(int &location) {
     case END:
       break;
     default:
-      error("Directive not implemneted\n", token.line);
+      error("Directive not implemneted\n", location);
     }
   }
 
@@ -321,7 +333,7 @@ instruction Assembler::assembleADD(int &loc) {
     i.OP = op2hex.at(ADD);
     loc++;
     // first argument
-    auto r2 = parseRegister(tokens[loc]);
+    auto r2 = parseRegister(loc);
     i.DR = reg2hex[r2];
     loc++;
 
@@ -329,7 +341,7 @@ instruction Assembler::assembleADD(int &loc) {
     loc++;
 
     // second argument
-    auto r3 = parseRegister(tokens[loc]);
+    auto r3 = parseRegister(loc);
     i.SR1 = reg2hex[r3];
     loc++;
 
@@ -337,14 +349,14 @@ instruction Assembler::assembleADD(int &loc) {
     loc++;
 
     // third argument either register or 5 bit number
-    auto imm5 = parseNumber(tokens[loc]);
+    auto imm5 = parseNumber(loc);
     if (imm5 != UINT16_MAX) {
       // third number
       i.b5 = true;
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto r4 = parseRegister(tokens[loc]);
+      auto r4 = parseRegister(loc);
       i.SR2 = reg2hex[r4];
       i.b5 = false;
       i.b4 = false;
@@ -364,7 +376,7 @@ instruction Assembler::assembleAND(int &loc) {
     i.OP = op2hex.at(AND);
     loc++;
     // first register
-    auto r2 = parseRegister(tokens[loc]);
+    auto r2 = parseRegister(loc);
     i.DR = reg2hex[r2];
     loc++;
 
@@ -372,7 +384,7 @@ instruction Assembler::assembleAND(int &loc) {
     loc++;
 
     // second register
-    auto r3 = parseRegister(tokens[loc]);
+    auto r3 = parseRegister(loc);
     i.SR1 = reg2hex[r3];
     loc++;
 
@@ -380,14 +392,14 @@ instruction Assembler::assembleAND(int &loc) {
     loc++;
 
     // third argument either register or 5 bit number
-    auto imm5 = parseNumber(tokens[loc]);
+    auto imm5 = parseNumber(loc);
     if (imm5 != UINT16_MAX) {
       // third number
       i.b5 = true;
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto r4 = parseRegister(tokens[loc]);
+      auto r4 = parseRegister(loc);
       i.SR2 = reg2hex[r4];
       i.b5 = false;
       i.b4 = false;
@@ -412,6 +424,7 @@ instruction Assembler::assembleBR(int &loc) {
   if (result != br2mask.end()) {
     i.OP = op2hex.at(BR);
     loc++;
+    tokens[loc].type = TokenType::LABEL;
     auto mask = result->second;
     i.n = (mask >> 2) & 0b1;
     i.z = (mask >> 1) & 0b1;
@@ -420,7 +433,7 @@ instruction Assembler::assembleBR(int &loc) {
     // PCoffset9
     i.PCoffset9 = 0b111111111;
   } else {
-    error("BR sub instruction not Implemnted", tokens[loc].line);
+    error("BR sub instruction not Implemnted", loc);
   }
 
   DEBUG_LOG(BR)
@@ -436,7 +449,7 @@ instruction Assembler::assembleJMP(int &loc) {
 
     loc++;
     // first argument
-    auto r2 = parseRegister(tokens[loc]);
+    auto r2 = parseRegister(loc);
     i.BaseR = reg2hex[r2] & 0b111;
 
     i.b11 = false;
@@ -463,6 +476,7 @@ instruction Assembler::assembleJSR(int &loc) {
     // skip label
     i.Poffset11 = 0b11111111111;
     loc++;
+    tokens[loc].type = TokenType::LABEL;
     i.b11 = true;
   }
 
@@ -478,7 +492,7 @@ instruction Assembler::assembleJSRR(int &loc) {
 
     // first argument baseR
     loc++;
-    auto baseR = parseRegister(tokens[loc]);
+    auto baseR = parseRegister(loc);
     i.BaseR = baseR & 0b111;
 
     i.b11 = false;
@@ -543,8 +557,9 @@ instruction Assembler::assembleLEA(int &loc) {
   if (tokens[loc].lexme == "LEA") {
     i.OP = op2hex.at(LEA);
     loc++;
+    tokens[loc].type = TokenType::LABEL;
     // first register
-    auto dr = parseRegister(tokens[loc]);
+    auto dr = parseRegister(loc);
     i.DR = dr & 0b111;
     loc++;
 
@@ -566,14 +581,14 @@ instruction Assembler::assembleNOT(int &loc) {
     i.OP = op2hex.at(NOT);
     loc++;
     // first register
-    auto dr = parseRegister(tokens[loc]);
+    auto dr = parseRegister(loc);
     i.DR = dr;
     loc++;
 
     expect(",", loc, "Expected ','");
     loc++;
     // second argument
-    auto sr = parseRegister(tokens[loc]);
+    auto sr = parseRegister(loc);
     i.SR = sr & 0b111;
     i.IMM5 = 0b11111;
   }
@@ -739,7 +754,7 @@ instruction Assembler::assembleTRAP(int &loc) {
     i.OP = op2hex.at(TRAP);
     loc++;
     // first number
-    auto trapvect8 = parseNumber(tokens[loc]);
+    auto trapvect8 = parseNumber(loc);
     i.trapvect8 = trapvect8 & 0b11111111;
     i.b8 = false;
     i.b9 = false;
@@ -758,7 +773,7 @@ instruction Assembler::assembleXOR(int &loc) {
     i.OP = op2hex.at(XOR);
     loc++;
     // first argument
-    auto dr = parseRegister(tokens[loc]);
+    auto dr = parseRegister(loc);
     i.DR = dr & 0b111;
     loc++;
 
@@ -766,7 +781,7 @@ instruction Assembler::assembleXOR(int &loc) {
     loc++;
 
     // second argument
-    auto sr1 = parseRegister(tokens[loc]);
+    auto sr1 = parseRegister(loc);
     i.SR1 = sr1 & 0b111;
     loc++;
 
@@ -774,14 +789,14 @@ instruction Assembler::assembleXOR(int &loc) {
     loc++;
 
     // third argument either register or 5 bit number
-    auto imm5 = parseNumber(tokens[loc]);
+    auto imm5 = parseNumber(loc);
     if (imm5 != UINT16_MAX) {
       // third number
       i.b5 = true;
       i.IMM5 = imm5 & 0b11111;
     } else {
       // third register
-      auto sr2 = parseRegister(tokens[loc]);
+      auto sr2 = parseRegister(loc);
       i.SR2 = sr2 & 0b111;
       i.b5 = false;
       i.b4 = false;
@@ -800,10 +815,10 @@ vector<instruction> Assembler::assembleORIG(int &loc) {
   if (tokens[loc].lexme == ".ORIG") {
     info.directive = ORIG;
     loc++;
-    info.number = parseNumber(tokens[loc]);
+    info.number = parseNumber(loc);
 
     if (info.number == UINT16_MAX) {
-      error("Expected number", tokens[loc].line);
+      error("Expected number", loc);
     }
 
     directives.push_back(info);
@@ -819,10 +834,10 @@ vector<instruction> Assembler::assembleFILL(int &loc) {
   if (tokens[loc].lexme == ".FILL") {
     info.directive = FILL;
     loc++;
-    info.number = parseNumber(tokens[loc]);
+    info.number = parseNumber(loc);
 
     if (info.number == UINT16_MAX) {
-      error("Expected number", tokens[loc].line);
+      error("Expected number", loc);
     }
     directives.push_back(info);
 
@@ -844,10 +859,10 @@ vector<instruction> Assembler::assembleBLKW(int &loc) {
     instruction i;
     info.directive = BLKW;
     loc++;
-    info.number = parseNumber(tokens[loc]);
+    info.number = parseNumber(loc);
 
     if (info.number == UINT16_MAX) {
-      error("Expected number", tokens[loc].line);
+      error("Expected number", loc);
     }
     directives.push_back(info);
 
@@ -869,7 +884,7 @@ vector<instruction> Assembler::assembleSTRINGZ(int &loc) {
     info.directive = STRINGZ;
 
     loc++;
-    info.str = parseString(tokens[loc]);
+    info.str = parseString(loc);
     directives.push_back(info);
 
     const auto n = info.str.length();

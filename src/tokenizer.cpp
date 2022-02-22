@@ -4,6 +4,9 @@ using namespace std;
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
+  // os << "("
+  //<< t.line << ", " << t.col << ","
+  //<< TokenType2str.at(int(t.type)) << ")";
   return os;
 }
 
@@ -15,6 +18,7 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
 
   char curChar = 0, prevChar = 0;
   int n = buffer.size();
+  int col = 0;
 
   state curState = START;
   while (i < n) {
@@ -24,6 +28,7 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
     if (prevChar == '\n' && prevNewline != i) {
       line++;
       prevNewline = i;
+      col = 0;
     }
 
     switch (curState) {
@@ -94,22 +99,26 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
         i++;
         j++;
       }
-
       break;
-    case DUMP:
-      auto t = buffer.substr(i - j, j);
-      // cout << t << " ";
-      tokens.push_back({t, line});
+
+    case DUMP: {
+      col++;
+      auto lexme = buffer.substr(i - j, j);
+      if (lexme == ",")
+        tokens.push_back({lexme, line, col, TokenType::COMMA});
+      else
+        tokens.push_back({lexme, line, col, TokenType::UNKNOWN});
       j = 0;
       curState = START;
-      break;
+    } break;
+
     }
   }
 
   // add last token
   if (j != 0) {
-    auto t = buffer.substr(i - j, j);
-    tokens.push_back({t, line});
+    auto lexme = buffer.substr(i - j, j);
+    tokens.push_back({lexme, line, col, TokenType::UNKNOWN});
     j = 0;
   }
   // cout << "i :" << i << " j :" << j << " n" << n << " \n";
@@ -124,7 +133,7 @@ void Tokenizer::printTokens(std::vector<Token> &tokens) {
       line = t.line;
       cout << "\n";
     }
-    cout << t.lexme << " ";
+    cout << t << " ";
   }
   cout << "\n";
 }
@@ -133,6 +142,6 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
   const auto line = tokens[location].line;
   for (auto t : tokens)
     if (t.line == line)
-      cout << t.lexme << " ";
+      cout << t << " ";
   cout << "\n";
 }
