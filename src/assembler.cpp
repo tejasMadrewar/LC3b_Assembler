@@ -207,6 +207,10 @@ void Assembler::firstPass() {
       instruction inst;
       inst.OP = op2hex.at(TRAP);
       inst.trapvect8 = trapSearch->second & 0xff;
+      inst.b8 = false;
+      inst.b9 = false;
+      inst.b10 = false;
+      inst.b11 = false;
       binaryData.push_back(inst);
     } else {
       // add to symbol Table
