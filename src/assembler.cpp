@@ -1,4 +1,5 @@
 #include "assembler.h"
+#include "disassembler.h"
 #include "opcode_data.h"
 
 #include <algorithm>
@@ -51,7 +52,8 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
 vector<instruction> Assembler::assemble(string filename) {
   ifstream file(filename);
-  auto outputFile = filename + ".bin";
+  auto hexFile = filename.substr(0, filename.find_last_of('.')) + ".hex";
+  auto outputFile = filename.substr(0, filename.find_last_of('.')) + ".bin";
   ofstream ofile(outputFile);
 
   // remove previous data
@@ -67,6 +69,7 @@ vector<instruction> Assembler::assemble(string filename) {
     assembleBuffer(buffer);
     // write data to output file
     writeToFile(binaryData, outputFile);
+    writeToHex(binaryData, hexFile);
   } else {
     cout << "Unable to open file\n";
   }
@@ -223,9 +226,18 @@ instruction Assembler::opcode2instruction(int &location) {
 
     switch (op) {
       OPCODE_DATA(d)
+      // trap
+#define x(a, b)                                                                \
+  case a: {                                                                    \
+    i.OP = op2hex.at(TRAP);                                                    \
+    i.trapvect8 = b;                                                           \
+    location++;                                                                \
+  } break;
+      EXTRA_TRAP_DATA(x);
     default:
       cout << "Instruction not implemneted\n";
     }
+#undef x
 #undef d
   }
 
@@ -323,6 +335,21 @@ void Assembler::writeToFile(vector<instruction> data, string outputFile) {
                 endianAdjusted.size() * sizeof(instruction));
   } else {
     cout << "Unable to open file" << outputFile << "\n";
+  }
+}
+
+void Assembler::writeToHex(vector<instruction> data, string hexFile) {
+  fstream ofile(hexFile, fstream::out);
+  auto endianAdjusted = data;
+
+  // write data
+  if (ofile.is_open()) {
+    cout << "Writing to " << hexFile << " \n";
+    for (auto i : endianAdjusted) {
+      ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
+    }
+  } else {
+    cout << "Unable to open file" << hexFile << "\n";
   }
 }
 

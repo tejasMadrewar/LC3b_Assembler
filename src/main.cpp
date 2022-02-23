@@ -11,20 +11,17 @@ int main(int argc, char **argv) {
   Assembler as;
   Disassembler dis;
 
-#if 1
+#if 0
   auto a = as.assemble("examples/sample.asm");
   // auto a = as.assemble("examples/DIRECTIVE_sample.asm");
   // cout << "Disassembly\n";
   // dis.disassemble(a);
   //  as.assemble("examples/DIRECTIVE_sample.asm");
-#else
-  Tokenizer tokenizer;
-  auto a = as.assemble("examples/sample.asm");
-  fstream f("examples/sample.asm");
-  string buffer((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());
-  auto tokens = tokenizer.tokenize(buffer);
-  tokenizer.printTokens(tokens);
 
+#else
+  auto a = as.assemble("examples/example0.asm");
+  auto b = as.assemble("examples/example1.asm");
+  auto c = as.assemble("examples/example2.asm");
 #endif
 
   return 0;

@@ -20,6 +20,7 @@ private:
   void firstPass();
   void secondPass();
   void writeToFile(vector<instruction> data, string filename);
+  void writeToHex(vector<instruction> data, string filename);
 
   void error(string erMsg, int location);
   void expect(string expected, int location, string erMsg);

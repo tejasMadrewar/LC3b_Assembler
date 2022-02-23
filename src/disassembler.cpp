@@ -70,6 +70,12 @@ string Disassembler::disInst(instruction i) {
   case XOR:
   case NOT:
     return disXOR(i);
+
+#define x(a, b)                                                                \
+  case a:                                                                      \
+    return #a;
+    EXTRA_TRAP_DATA(x)
+#undef x
   }
 
   return "Not implemented";
@@ -164,6 +170,13 @@ string Disassembler::disSTW(instruction i) {
 }
 
 string Disassembler::disTRAP(instruction i) {
+  switch (i.trapvect8) {
+#define x(a, b)                                                                \
+  case b:                                                                      \
+    return #a;
+    EXTRA_TRAP_DATA(x)
+  }
+#undef x
   return stringOpN("TRAP", mask(i.trapvect8, 8));
 }
 

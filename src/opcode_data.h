@@ -67,6 +67,14 @@ d(BLKW)\
 d(STRINGZ)\
 d(END)
 
+#define EXTRA_TRAP_DATA(d)\
+d(GETC, 0x20)\
+d(OUT,  0x21)\
+d(PUTS, 0x22)\
+d(IN,   0x23)\
+d(PUTSP,0x24)\
+d(HALT, 0x25)
+
 #define DISASSEMBLY_DATA(d)\
 d(ADD)\
 d(AND)\
@@ -88,13 +96,18 @@ d(RSHFA)
 
 // Opcode enum
 #define e(a,b) a,
-enum Opcode{ OPCODE_DATA(e) };
+enum Opcode{ OPCODE_DATA(e) EXTRA_TRAP_DATA(e) };
 #undef e
 
 // opcode to hex value
 #define e(a,b) {a, b},
-const unordered_map<Opcode,uint16_t> op2hex ={ OPCODE_DATA(e)};
+const unordered_map<Opcode,uint16_t> op2hex ={ OPCODE_DATA(e) EXTRA_TRAP_DATA(e)};
 #undef e
+
+// extra opcode for trap
+#define d(a,b) {a, b},
+const unordered_map<Opcode, uint16_t> trap2hex = { EXTRA_TRAP_DATA(d) };
+#undef d
 
 // opcode enum to str
 #define e(a,b) #a,
@@ -136,8 +149,9 @@ enum Directive{ DIRECTIVE_DATA(e) };
 
 // directive str to enum
 #define e(a)  {"."#a, a},
-const unordered_map<string,Directive> str2dir ={ DIRECTIVE_DATA(e)};
+const unordered_map<string,Directive> str2dir ={ DIRECTIVE_DATA(e) };
 #undef e
+
 
 struct directiveInfo{
 	Directive directive;
