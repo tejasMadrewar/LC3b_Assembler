@@ -96,17 +96,17 @@ d(RSHFA)
 
 // Opcode enum
 #define e(a,b) a,
-enum Opcode{ OPCODE_DATA(e) EXTRA_TRAP_DATA(e) };
+enum Opcode{ OPCODE_DATA(e)  };
 #undef e
 
 // opcode to hex value
 #define e(a,b) {a, b},
-const unordered_map<Opcode,uint16_t> op2hex ={ OPCODE_DATA(e) EXTRA_TRAP_DATA(e)};
+const unordered_map<Opcode,uint16_t> op2hex ={ OPCODE_DATA(e) };
 #undef e
 
 // extra opcode for trap
-#define d(a,b) {a, b},
-const unordered_map<Opcode, uint16_t> trap2hex = { EXTRA_TRAP_DATA(d) };
+#define d(a,b) {#a, b},
+const unordered_map<string, uint16_t> trap2hex = { EXTRA_TRAP_DATA(d) };
 #undef d
 
 // opcode enum to str
@@ -117,7 +117,7 @@ const vector<string> op2str ={ OPCODE_DATA(e)};
 // opcode str to opcode enum
 #define e(a,b) {#a, a},
 #define br(a,b) {#a, BR},
-const unordered_map<string,Opcode> str2op ={ OPCODE_DATA(e) BR_DATA(br)};
+const unordered_map<string,Opcode> str2op ={ OPCODE_DATA(e) BR_DATA(br) };
 #undef br
 #undef e
 

@@ -360,3 +360,17 @@ TEST_CASE("XOR tests") {
     REQUIRE(i.at(0).b5 == true);
   }
 }
+
+TEST_CASE("different TRAP tests") {
+#define x(a, b)                                                                \
+  SECTION(#a) {                                                                \
+    string str = #a;                                                           \
+    auto i = assembler.assembleBuffer(str);                                    \
+    REQUIRE(i.size() == 1);                                                    \
+    REQUIRE(i.at(0).OP == op2hex.at(TRAP));                                    \
+    REQUIRE(i.at(0).trapvect8 == b);                                           \
+  }
+
+  EXTRA_TRAP_DATA(x)
+#undef x
+}

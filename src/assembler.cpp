@@ -184,6 +184,8 @@ void Assembler::firstPass() {
     auto f = str2op.find(t.lexme);
     // check for directive
     auto d = str2dir.find(t.lexme);
+    // check for trap
+    auto trapSearch = trap2hex.find(t.lexme);
     if (f != str2op.end()) {
       // opcode
       // tokenizer.printLine(i, tokens);
@@ -201,6 +203,11 @@ void Assembler::firstPass() {
       tokens[i].type = TokenType::DIRECTIVE;
       auto data = directive2instructions(i);
       binaryData.insert(binaryData.end(), data.begin(), data.end());
+    } else if (trapSearch != trap2hex.end()) {
+      instruction inst;
+      inst.OP = op2hex.at(TRAP);
+      inst.trapvect8 = trapSearch->second & 0xff;
+      binaryData.push_back(inst);
     } else {
       // add to symbol Table
       tokens[i].type = TokenType::LABEL;
@@ -227,17 +234,9 @@ instruction Assembler::opcode2instruction(int &location) {
     switch (op) {
       OPCODE_DATA(d)
       // trap
-#define x(a, b)                                                                \
-  case a: {                                                                    \
-    i.OP = op2hex.at(TRAP);                                                    \
-    i.trapvect8 = b;                                                           \
-    location++;                                                                \
-  } break;
-      EXTRA_TRAP_DATA(x);
     default:
       cout << "Instruction not implemneted\n";
     }
-#undef x
 #undef d
   }
 

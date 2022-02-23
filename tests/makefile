@@ -2,7 +2,7 @@ CXX = clang++
 
 CLANG_FORMAT = clang-format
 
-DEBUG_ARGS = 
+DEBUG_ARGS = -g
 DEP_ARGS = -MMD -MP
 CXX_STD = -std=c++14
 

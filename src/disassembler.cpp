@@ -26,6 +26,7 @@ void Disassembler::disassemble(vector<instruction> program) {
     cout << disInst(inst) << "\n";
   }
 }
+
 string Disassembler::disInst(instruction i) {
 
   auto opSearch = hex2op.find(i.OP);
@@ -70,12 +71,6 @@ string Disassembler::disInst(instruction i) {
   case XOR:
   case NOT:
     return disXOR(i);
-
-#define x(a, b)                                                                \
-  case a:                                                                      \
-    return #a;
-    EXTRA_TRAP_DATA(x)
-#undef x
   }
 
   return "Not implemented";
