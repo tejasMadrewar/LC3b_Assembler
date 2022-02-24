@@ -1,6 +1,7 @@
 #include "assembler.h"
 #include "disassembler.h"
 #include "opcode_data.h"
+#include "tokenizer.h"
 
 #include <algorithm>
 #include <cctype>
@@ -121,7 +122,6 @@ uint16_t Assembler::parseNumber(int loc) {
   if (number == UINT16_MAX) {
     // cerr << "invalid number " << t << "\n";
   } else {
-    t.type = TokenType::NUM;
   }
 
   return number;
@@ -134,7 +134,6 @@ Register Assembler::parseRegister(int loc) {
   auto f = str2reg.find(t.lexme);
   if (f != str2reg.end()) {
     r = f->second;
-    t.type = TokenType::REG;
   } else {
     error("Expected register at ", loc);
   }
@@ -180,30 +179,28 @@ void Assembler::firstPass() {
   for (int i = 0; i < tokens.size(); i++) {
     auto t = tokens[i];
 
-    // check for opcode
-    auto f = str2op.find(t.lexme);
-    // check for directive
-    auto d = str2dir.find(t.lexme);
-    // check for trap
-    auto trapSearch = trap2hex.find(t.lexme);
-    if (f != str2op.end()) {
+    if (t.type == TokenType::OP) {
       // opcode
       // tokenizer.printLine(i, tokens);
-      tokens[i].type = TokenType::OP;
       auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
       // save locations to patch
-      auto isInsPatched = labelInst2mask.find(f->second);
-      if (isInsPatched != labelInst2mask.end()) {
-        // save location
-        patchLocations.push_back({binaryData.size() - 1, tokens[i].lexme});
+      auto opcode = str2op.find(t.lexme);
+      if (opcode != str2op.end()) {
+        auto isInsPatched = labelInst2mask.find(opcode->second);
+        if (isInsPatched != labelInst2mask.end()) {
+          // save location
+          patchLocations.push_back({binaryData.size() - 1, tokens[i].lexme});
+        }
       }
-    } else if (d != str2dir.end()) {
+    } else if (t.type == TokenType::DIRECTIVE) {
       // directive
-      tokens[i].type = TokenType::DIRECTIVE;
       auto data = directive2instructions(i);
       binaryData.insert(binaryData.end(), data.begin(), data.end());
-    } else if (trapSearch != trap2hex.end()) {
+    } else if (t.type == TokenType::TRAP) {
+      auto trapSearch = trap2hex.find(t.lexme);
+      if (trapSearch == trap2hex.end())
+        error("TRAP not implemented", i);
       instruction inst;
       inst.OP = op2hex.at(TRAP);
       inst.trapvect8 = trapSearch->second & 0xff;
@@ -212,10 +209,11 @@ void Assembler::firstPass() {
       inst.b10 = false;
       inst.b11 = false;
       binaryData.push_back(inst);
-    } else {
+    } else if (t.type == TokenType::LABEL) {
       // add to symbol Table
-      tokens[i].type = TokenType::LABEL;
       symbolTable[t.lexme] = binaryData.size();
+    } else {
+      error("Unknown Token", i);
     }
   }
   // tokenizer.printTokens(tokens);
@@ -237,11 +235,12 @@ instruction Assembler::opcode2instruction(int &location) {
 
     switch (op) {
       OPCODE_DATA(d)
-      // trap
     default:
       cout << "Instruction not implemneted\n";
     }
 #undef d
+  } else {
+    error("Instruction not implemneted", location);
   }
 
   return i;
@@ -274,6 +273,8 @@ vector<instruction> Assembler::directive2instructions(int &location) {
     default:
       error("Directive not implemneted\n", location);
     }
+  } else {
+    error("Directive not implemneted", location);
   }
 
   return data;
@@ -454,7 +455,6 @@ instruction Assembler::assembleBR(int &loc) {
   if (result != br2mask.end()) {
     i.OP = op2hex.at(BR);
     loc++;
-    tokens[loc].type = TokenType::LABEL;
     auto mask = result->second;
     i.n = (mask >> 2) & 0b1;
     i.z = (mask >> 1) & 0b1;
@@ -506,7 +506,6 @@ instruction Assembler::assembleJSR(int &loc) {
     // skip label
     i.Poffset11 = 0b11111111111;
     loc++;
-    tokens[loc].type = TokenType::LABEL;
     i.b11 = true;
   }
 
@@ -587,7 +586,6 @@ instruction Assembler::assembleLEA(int &loc) {
   if (tokens[loc].lexme == "LEA") {
     i.OP = op2hex.at(LEA);
     loc++;
-    tokens[loc].type = TokenType::LABEL;
     // first register
     auto dr = parseRegister(loc);
     i.DR = dr & 0b111;

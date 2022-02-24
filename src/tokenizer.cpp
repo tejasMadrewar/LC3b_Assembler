@@ -2,12 +2,87 @@
 
 using namespace std;
 
+#define x(a, b) {#a, TokenType::REG},
+#define y(a, b) {#a, TokenType::OP},
+#define z(a, b) {#a, TokenType::TRAP},
+#define d(a) {"." #a, TokenType::DIRECTIVE},
+const unordered_map<string, TokenType> Tokenizer::str2tokentype = {
+    REGISTER_DATA(x) OPCODE_DATA(y) BR_DATA(y) EXTRA_TRAP_DATA(z)
+        DIRECTIVE_DATA(d){",", TokenType::COMMA}};
+#undef x
+#undef y
+#undef z
+#undef d
+
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
-  // os << "("
-  //<< t.line << ", " << t.col << ","
-  //<< TokenType2str.at(int(t.type)) << ")";
+  os << "("
+     //<< t.line << ", " << t.col << ", "
+     << TokenType2str.at(int(t.type)) << ")";
   return os;
+}
+
+bool Tokenizer::isNumber(string &str) {
+  const auto n = str.length();
+  if (n >= 2) {
+    if (str[0] == 'x') {
+      auto s = str.substr(1, n - 1);
+      // cout << s << "\n";
+      return str.find_first_not_of("0123456789abcdefABCDEF", 1) ==
+             std::string::npos;
+    } else if (str[0] == '#') {
+      string s;
+      if (str[1] == '-') {
+        if (n < 3)
+          return false;
+        s = str.substr(2, n - 2);
+      } else {
+        s = str.substr(1, n - 1);
+      }
+      return s.find_first_not_of("0123456789") == std::string::npos;
+    }
+  }
+
+  return false;
+}
+
+bool Tokenizer::isLabel(string &str) {
+  if (str.length() > 0) {
+    // first char alpha
+    if (!isalpha(str[0]))
+      return false;
+
+    // all char alpha numeric
+    for (auto c : str)
+      if (!isalnum(c))
+        return false;
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+TokenType Tokenizer::getTokenType(string &str) {
+  auto type = TokenType::UNKNOWN;
+  auto tokenTypeSearch = str2tokentype.find(str);
+
+  if (tokenTypeSearch != str2tokentype.end()) {
+    // reg, opcode, directive , traps
+    type = tokenTypeSearch->second;
+
+  } else if (str.length() > 2 and str.front() == '"' and str.back() == '"') {
+    // string
+    type = TokenType::STR;
+  } else if (isNumber(str)) {
+    // number
+    type = TokenType::NUM;
+  } else if (isLabel(str)) {
+    // label
+    type = TokenType::LABEL;
+  }
+
+  return type;
 }
 
 vector<Token> Tokenizer::tokenize(string &buffer) {
@@ -104,24 +179,19 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
     case DUMP: {
       col++;
       auto lexme = buffer.substr(i - j, j);
-      if (lexme == ",")
-        tokens.push_back({lexme, line, col, TokenType::COMMA});
-      else
-        tokens.push_back({lexme, line, col, TokenType::UNKNOWN});
+      tokens.push_back({lexme, line, col, getTokenType(lexme)});
       j = 0;
       curState = START;
     } break;
-
     }
   }
 
   // add last token
   if (j != 0) {
     auto lexme = buffer.substr(i - j, j);
-    tokens.push_back({lexme, line, col, TokenType::UNKNOWN});
+    tokens.push_back({lexme, line, col, getTokenType(lexme)});
     j = 0;
   }
-  // cout << "i :" << i << " j :" << j << " n" << n << " \n";
 
   return tokens;
 }

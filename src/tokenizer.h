@@ -2,14 +2,15 @@
 
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
+#include "opcode_data.h"
+
 using std::ostream;
-using std::string;
-using std::vector;
 
 #define TOKENTYPE_DATA(d)                                                      \
-  d(UNKNOWN) d(OP) d(REG) d(NUM) d(DIRECTIVE) d(LABEL) d(COMMA)
+  d(UNKNOWN) d(OP) d(REG) d(NUM) d(DIRECTIVE) d(LABEL) d(TRAP) d(COMMA) d(STR)
 
 #define x(a) a,
 enum class TokenType { TOKENTYPE_DATA(x) };
@@ -36,4 +37,8 @@ public:
 
 private:
   bool isWhiteSpace(char c) { return isspace(c); }
+  bool isNumber(string &str);
+  bool isLabel(string &str);
+  TokenType getTokenType(string &str);
+  static const unordered_map<string, TokenType> str2tokentype;
 };

@@ -7,7 +7,9 @@ http://users.ece.utexas.edu/~patt/
 https://github.com/pepaslabs/LC-3b-disassembler
 # contains lc3 assembler and lc3 docs
 https://github.com/pepaslabs/lc3as.py
-
+# lc3 assembler
+https://www.cs.colostate.edu/~cs270/.Spring16/assignments/P8B/doc/index.html
+https://www.cis.upenn.edu/~milom/cse240-Fall06/
 # course c to lc3
 https://www.cs.colostate.edu/~cs270/.Spring22/index.php
 
