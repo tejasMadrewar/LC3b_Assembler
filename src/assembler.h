@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "errors.h"
 #include "instruction.h"
 #include "opcode_data.h"
 #include "tokenizer.h"
@@ -19,10 +20,14 @@ public:
 private:
   void firstPass();
   void secondPass();
+  void errorChecks();
   void writeToFile(vector<instruction> data, string filename);
   void writeToHex(vector<instruction> data, string filename);
+  void writeToObj(vector<instruction> data, string filename);
+  void writeToBin(vector<instruction> data, string filename);
 
   void error(string erMsg, int location);
+  void error(string erMsg);
   void expect(string expected, int location, string erMsg);
 
   uint16_t parseNumber(int location);
@@ -68,5 +73,6 @@ private:
 
   vector<std::pair<int, string>> patchLocations;
   vector<directiveInfo> directives;
+  vector<ErrorInfo> errors;
   static const unordered_map<Opcode, uint32_t> labelInst2mask;
 };

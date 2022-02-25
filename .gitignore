@@ -1,6 +1,8 @@
 docs/*.pdf
 src/examples/*.bin
 src/examples/*.hex
+src/examples/errorTests/*.bin
+src/examples/errorTests/*.hex
 src/obj/
 src/.cache/
 src/compile_commands.json

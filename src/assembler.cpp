@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <ctype.h>
+#include <set>
 
 #include <bitset>
 
@@ -39,6 +40,8 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
   binaryData.clear();
   symbolTable.clear();
   patchLocations.clear();
+  directives.clear();
+  errors.clear();
 
   // tokenize
   tokens = tokenizer.tokenize(buffer);
@@ -46,6 +49,7 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
   // run all passes
   firstPass();
+  errorChecks();
   secondPass();
 
   return binaryData;
@@ -61,6 +65,8 @@ vector<instruction> Assembler::assemble(string filename) {
   binaryData.clear();
   symbolTable.clear();
   patchLocations.clear();
+  directives.clear();
+  errors.clear();
 
   // read file
   if (file.is_open()) {
@@ -70,7 +76,7 @@ vector<instruction> Assembler::assemble(string filename) {
     assembleBuffer(buffer);
     // write data to output file
     writeToFile(binaryData, outputFile);
-    writeToHex(binaryData, hexFile);
+    // writeToHex(binaryData, hexFile);
   } else {
     cout << "Unable to open file\n";
   }
@@ -89,6 +95,11 @@ void Assembler::error(string message, int loc) {
     if (i.line == t.line)
       cout << i.lexme << " ";
 
+  exit(1);
+}
+
+void Assembler::error(string erMsg) {
+  cout << "\nError: " << erMsg << "\n";
   exit(1);
 }
 
@@ -236,11 +247,11 @@ instruction Assembler::opcode2instruction(int &location) {
     switch (op) {
       OPCODE_DATA(d)
     default:
-      cout << "Instruction not implemneted\n";
+      cout << "Instruction not implemented\n";
     }
 #undef d
   } else {
-    error("Instruction not implemneted", location);
+    error("Instruction not implemented", location);
   }
 
   return i;
@@ -268,13 +279,17 @@ vector<instruction> Assembler::directive2instructions(int &location) {
     case STRINGZ:
       data = assembleSTRINGZ(location);
       break;
-    case END:
-      break;
+    case END: {
+      directiveInfo info;
+      info.directive = END;
+      info.location = location;
+      directives.push_back(info);
+    } break;
     default:
-      error("Directive not implemneted\n", location);
+      error("Directive not implemented\n", location);
     }
   } else {
-    error("Directive not implemneted", location);
+    error("Directive not implemented", location);
   }
 
   return data;
@@ -321,6 +336,63 @@ void Assembler::secondPass() {
   }
 }
 
+void Assembler::errorChecks() {
+  int n = tokens.size();
+  int orig_count = 0;
+  int end_count = 0;
+  for (auto d : directives) {
+    switch (d.directive) {
+    case ORIG: {
+      orig_count++;
+      if (d.location != 0) {
+        errors.push_back({Error::assemblyBeforeORIG, d.location});
+        errors.push_back({Error::ORIG_END_location, d.location});
+      }
+      break;
+    }
+
+    case END: {
+      end_count++;
+      if (d.location != n - 1) {
+        errors.push_back({Error::ORIG_END_location, d.location});
+      }
+      if (d.location < n - 1) {
+        errors.push_back({Error::ignoreAfterEND, d.location});
+      }
+      break;
+    }
+    case FILL:
+    case BLKW:
+    case STRINGZ:
+      break;
+    }
+  }
+  // no end error
+  if(end_count == 0){
+    errors.push_back({Error::mustEndWithEND, -1});
+  }
+
+  // no assembly inst check
+  if (binaryData.size() == 0) {
+    errors.push_back({Error::noAssembly, -1});
+  }
+
+  // only one orig
+  if (orig_count > 1) {
+    errors.push_back({Error::onlyOneORIG, -1});
+  }
+
+  // print errors if found
+  if (errors.size() != 0) {
+    for (auto e : errors) {
+      cout << "\n";
+      cout << "    Error: " << err2msg.at(e.er) << "\n    ";
+      tokenizer.printLine(e.location, tokens);
+    }
+    // exit(1);
+  }
+}
+
 void Assembler::writeToFile(vector<instruction> data, string outputFile) {
   fstream ofile(outputFile);
   auto endianAdjusted = data;
@@ -349,12 +421,38 @@ void Assembler::writeToHex(vector<instruction> data, string hexFile) {
   // write data
   if (ofile.is_open()) {
     cout << "Writing to " << hexFile << " \n";
+
+    bool origFound = false;
+    for (auto i : directives) {
+      if (i.directive == ORIG) {
+        ofile << "0x" << hex << setw(4) << setfill('0') << i.number << "\n";
+        origFound = true;
+        break;
+      }
+    }
+    if (!origFound) {
+      cout << "ORIG not found\n";
+      exit(0);
+    }
+
+    // ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
+    //  program
     for (auto i : endianAdjusted) {
       ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
     }
   } else {
     cout << "Unable to open file" << hexFile << "\n";
   }
+}
+
+void writeToObj(vector<instruction> data, string filename) {
+  cout << "writing obj file not implemented";
+  exit(1);
+}
+
+void writeToBin(vector<instruction> data, string filename) {
+  cout << "writing bin file not implemented";
+  exit(1);
 }
 
 instruction Assembler::assembleADD(int &loc) {
@@ -842,6 +940,7 @@ vector<instruction> Assembler::assembleORIG(int &loc) {
 
   if (tokens[loc].lexme == ".ORIG") {
     info.directive = ORIG;
+    info.location = loc;
     loc++;
     info.number = parseNumber(loc);
 
@@ -861,6 +960,7 @@ vector<instruction> Assembler::assembleFILL(int &loc) {
 
   if (tokens[loc].lexme == ".FILL") {
     info.directive = FILL;
+    info.location = loc;
     loc++;
     info.number = parseNumber(loc);
 
@@ -886,6 +986,7 @@ vector<instruction> Assembler::assembleBLKW(int &loc) {
     directiveInfo info;
     instruction i;
     info.directive = BLKW;
+    info.location = loc;
     loc++;
     info.number = parseNumber(loc);
 
@@ -910,6 +1011,7 @@ vector<instruction> Assembler::assembleSTRINGZ(int &loc) {
     i.i = 0;
     directiveInfo info;
     info.directive = STRINGZ;
+    info.location = loc;
 
     loc++;
     info.str = parseString(loc);

@@ -157,6 +157,7 @@ struct directiveInfo{
 	Directive directive;
 	string str;
 	uint16_t number;
+	int location;
 };
 
 // disassembly data

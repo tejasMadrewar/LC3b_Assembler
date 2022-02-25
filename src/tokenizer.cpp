@@ -197,7 +197,7 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
 }
 
 void Tokenizer::printTokens(std::vector<Token> &tokens) {
-  int line = 0;
+  int line = -1;
   for (auto t : tokens) {
     if (line != t.line) {
       line = t.line;
@@ -209,7 +209,10 @@ void Tokenizer::printTokens(std::vector<Token> &tokens) {
 }
 
 void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
+  if (location < 0)
+    return;
   const auto line = tokens[location].line;
+  cout << line << " : ";
   for (auto t : tokens)
     if (t.line == line)
       cout << t << " ";
