@@ -29,7 +29,7 @@ using namespace std;
 #define DEBUG_LOG_DIR(DIRECTIVE) ;
 #endif
 
-const unordered_map<Opcode, uint32_t> Assembler::labelInst2mask = {
+const unordered_map<Opcode, uint32_t> Assembler::labelInst = {
     {Opcode::JSR, 0b11111111111},
     {Opcode::LEA, 0b111111111},
     {Opcode::BR, 0b111111111},
@@ -77,6 +77,7 @@ vector<instruction> Assembler::assemble(string filename) {
     // write data to output file
     writeToFile(binaryData, outputFile);
     // writeToHex(binaryData, hexFile);
+    tokenizer.printTokens(tokens);
   } else {
     cout << "Unable to open file\n";
   }
@@ -198,10 +199,13 @@ void Assembler::firstPass() {
       // save locations to patch
       auto opcode = str2op.find(t.lexme);
       if (opcode != str2op.end()) {
-        auto isInsPatched = labelInst2mask.find(opcode->second);
-        if (isInsPatched != labelInst2mask.end()) {
+        auto isInsPatched = labelInst.find(opcode->second);
+        if (isInsPatched != labelInst.end()) {
           // save location
-          patchLocations.push_back({binaryData.size() - 1, tokens[i].lexme});
+          instLabelData d;
+          d.location = i;
+          d.offset = binaryData.size() - 1;
+          patchLocations.push_back(d);
         }
       }
     } else if (t.type == TokenType::DIRECTIVE) {
@@ -222,7 +226,13 @@ void Assembler::firstPass() {
       binaryData.push_back(inst);
     } else if (t.type == TokenType::LABEL) {
       // add to symbol Table
-      symbolTable[t.lexme] = binaryData.size();
+
+      // check if label present of not
+      if (symbolTable.find(t.lexme) == symbolTable.end()) {
+        symbolTable[t.lexme] = binaryData.size();
+      } else {
+        errors.push_back({Error::labelDefinedOnlyOnce, i});
+      }
     } else {
       error("Unknown Token", i);
     }
@@ -303,15 +313,16 @@ void Assembler::secondPass() {
 #endif
 
   for (const auto &l : patchLocations) {
-    auto &inst = binaryData[l.first];
+    auto &inst = binaryData[l.offset];
     auto opcode = inst.OP;
+    auto t = tokens[l.location];
     // cout << "Patch location: " << (l.first * 2) << " -> " << l.second <<
     // "\n";
 
     switch (opcode) {
       // BRANCH
     case 0b0000: {
-      auto address = symbolTable.find(l.second);
+      auto address = symbolTable.find(t.lexme);
       if (address != symbolTable.end()) {
         inst.PCoffset9 = address->second * 2;
       }
@@ -319,7 +330,7 @@ void Assembler::secondPass() {
       // JSR
     case 0b0100: {
       if (inst.b11) {
-        auto address = symbolTable.find(l.second);
+        auto address = symbolTable.find(t.lexme);
         if (address != symbolTable.end()) {
           inst.Poffset11 = address->second * 2;
         }
@@ -327,7 +338,7 @@ void Assembler::secondPass() {
     } break;
       // LEA
     case 0b1110: {
-      auto address = symbolTable.find(l.second);
+      auto address = symbolTable.find(t.lexme);
       if (address != symbolTable.end()) {
         inst.PCoffset9 = address->second * 2;
       }
@@ -347,6 +358,7 @@ void Assembler::errorChecks() {
       if (d.location != 0) {
         errors.push_back({Error::assemblyBeforeORIG, d.location});
         errors.push_back({Error::ORIG_END_location, d.location});
+        errors.push_back({Error::nothingBeforeORIG, d.location});
       }
       break;
     }
@@ -357,7 +369,8 @@ void Assembler::errorChecks() {
         errors.push_back({Error::ORIG_END_location, d.location});
       }
       if (d.location < n - 1) {
-        errors.push_back({Error::ignoreAfterEND, d.location});
+        cout << err2msg.at(Error::ignoreAfterEND) << "\n";
+        // errors.push_back({Error::ignoreAfterEND, d.location});
       }
       break;
     }
@@ -368,7 +381,7 @@ void Assembler::errorChecks() {
     }
   }
   // no end error
-  if(end_count == 0){
+  if (end_count == 0) {
     errors.push_back({Error::mustEndWithEND, -1});
   }
 
@@ -382,7 +395,17 @@ void Assembler::errorChecks() {
     errors.push_back({Error::onlyOneORIG, -1});
   }
 
-  // print errors if found
+  // check for undefined Label
+  for (auto p : patchLocations) {
+    auto t = tokens[p.location];
+    // check if label is defined of not
+    auto s = symbolTable.find(t.lexme);
+    if (s == symbolTable.end()) {
+      errors.push_back({Error::unknownLabel, p.location});
+    }
+  }
+
+  // PRINT ERRORS IF FOUND
   if (errors.size() != 0) {
     for (auto e : errors) {
       cout << "\n";

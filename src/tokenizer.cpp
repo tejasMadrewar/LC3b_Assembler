@@ -16,9 +16,9 @@ const unordered_map<string, TokenType> Tokenizer::str2tokentype = {
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
-  os << "("
-     //<< t.line << ", " << t.col << ", "
-     << TokenType2str.at(int(t.type)) << ")";
+  // os << "("
+  //<< t.line << ", " << t.col << ", "
+  //<< TokenType2str.at(int(t.type)) << ")";
   return os;
 }
 
@@ -199,11 +199,16 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
 void Tokenizer::printTokens(std::vector<Token> &tokens) {
   int line = -1;
   for (auto t : tokens) {
+    // new line check
     if (line != t.line) {
       line = t.line;
       cout << "\n";
+      cout << line << " :";
     }
-    cout << t << " ";
+    // print token
+    if (t.type != TokenType::COMMA)
+      cout << " ";
+    cout << t;
   }
   cout << "\n";
 }
@@ -212,9 +217,13 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
   if (location < 0)
     return;
   const auto line = tokens[location].line;
-  cout << line << " : ";
-  for (auto t : tokens)
-    if (t.line == line)
-      cout << t << " ";
+  cout << line << " :";
+  for (auto t : tokens) {
+    if (t.line == line) {
+      if (t.type != TokenType::COMMA)
+        cout << " ";
+      cout << t;
+    }
+  }
   cout << "\n";
 }

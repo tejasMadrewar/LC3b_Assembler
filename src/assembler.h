@@ -71,8 +71,12 @@ private:
   Tokenizer tokenizer;
   vector<Token> tokens = {};
 
-  vector<std::pair<int, string>> patchLocations;
+  struct instLabelData {
+    int offset;
+    int location;
+  };
+  vector<instLabelData> patchLocations;
   vector<directiveInfo> directives;
   vector<ErrorInfo> errors;
-  static const unordered_map<Opcode, uint32_t> labelInst2mask;
+  static const unordered_map<Opcode, uint32_t> labelInst;
 };
