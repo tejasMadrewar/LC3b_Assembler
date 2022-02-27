@@ -28,3 +28,7 @@ https://cs.brynmawr.edu/Courses/cs240/fall2013/highlevelprogramming.html
 
 # art of struct packing
 http://www.catb.org/esr/structure-packing/
+
+# compiler notes
+https://github.com/mebusy/notes/blob/master/dev_notes/Compiler_readme.md
+https://iitd.github.io/col728/index.html

@@ -10,7 +10,7 @@
 using std::ostream;
 
 #define TOKENTYPE_DATA(d)                                                      \
-  d(UNKNOWN) d(OP) d(REG) d(NUM) d(DIRECTIVE) d(LABEL) d(TRAP) d(COMMA) d(STR)
+  d(INVALID) d(OP) d(REG) d(NUM) d(DIRECTIVE) d(LABEL) d(TRAP) d(COMMA) d(STR)
 
 #define x(a) a,
 enum class TokenType { TOKENTYPE_DATA(x) };
@@ -39,6 +39,7 @@ private:
   bool isWhiteSpace(char c) { return isspace(c); }
   bool isNumber(string &str);
   bool isLabel(string &str);
+  void tokensErrorCheck(vector<Token> &tokens);
   TokenType getTokenType(string &str);
   static const unordered_map<string, TokenType> str2tokentype;
 };

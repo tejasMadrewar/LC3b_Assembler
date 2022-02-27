@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include <vector>
 
 using namespace std;
 
@@ -64,7 +65,7 @@ bool Tokenizer::isLabel(string &str) {
 }
 
 TokenType Tokenizer::getTokenType(string &str) {
-  auto type = TokenType::UNKNOWN;
+  auto type = TokenType::INVALID;
   auto tokenTypeSearch = str2tokentype.find(str);
 
   if (tokenTypeSearch != str2tokentype.end()) {
@@ -193,6 +194,7 @@ vector<Token> Tokenizer::tokenize(string &buffer) {
     j = 0;
   }
 
+  tokensErrorCheck(tokens);
   return tokens;
 }
 
@@ -226,4 +228,23 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
     }
   }
   cout << "\n";
+}
+
+void Tokenizer::tokensErrorCheck(std::vector<Token> &tokens) {
+  std::vector<int> errorLocations;
+  for (int i = 0; i < tokens.size(); i++) {
+    if (tokens[i].type == TokenType::INVALID) {
+      errorLocations.push_back(i);
+    }
+  }
+  // print errors if found
+  if (tokens.size() > 0) {
+    for (auto t : errorLocations) {
+      cout << "Invalid token: " << tokens[t].lexme << " at line "
+           << tokens[t].line << "\n";
+      printLine(t, tokens);
+      cout << "\n";
+    }
+    exit(1);
+  }
 }
