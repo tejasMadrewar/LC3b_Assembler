@@ -424,13 +424,6 @@ void Assembler::writeToFile(vector<instruction> data, string fileName) {
   // add ORIG address
   endianAdjusted.insert(endianAdjusted.begin(), address);
 
-  //// change to big endianess
-  // for (auto &i : endianAdjusted) {
-  //   auto c1 = i.c1;
-  //   i.c1 = i.c2;
-  //   i.c2 = c1;
-  // }
-
   writeToObj(endianAdjusted, objFile);
   writeToHex(endianAdjusted, hexFile);
   writeToBin(endianAdjusted, binFile);
@@ -450,8 +443,14 @@ void Assembler::writeToHex(vector<instruction> &data, string &hexFile) {
   }
 }
 
-void Assembler::writeToObj(vector<instruction> &data, string &filename) {
+void Assembler::writeToObj(vector<instruction> data, string &filename) {
   fstream ofile(filename, fstream::out);
+  //// change to big endianess
+  for (auto &i : data) {
+    auto c1 = i.c1;
+    i.c1 = i.c2;
+    i.c2 = c1;
+  }
   // write data
   if (ofile.is_open()) {
     cout << "Writing to " << filename << " \n";
