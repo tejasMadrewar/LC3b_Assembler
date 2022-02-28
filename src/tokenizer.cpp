@@ -3,13 +3,13 @@
 
 using namespace std;
 
-#define x(a, b) {#a, TokenType::REG},
-#define y(a, b) {#a, TokenType::OP},
-#define z(a, b) {#a, TokenType::TRAP},
-#define d(a) {"." #a, TokenType::DIRECTIVE},
-const unordered_map<string, TokenType> Tokenizer::str2tokentype = {
+#define x(a, b) {#a, TOKEN_TYPE::REG},
+#define y(a, b) {#a, TOKEN_TYPE::OP},
+#define z(a, b) {#a, TOKEN_TYPE::TRAP},
+#define d(a) {"." #a, TOKEN_TYPE::DIRECTIVE},
+const unordered_map<string, TOKEN_TYPE> Tokenizer::str2tokentype = {
     REGISTER_DATA(x) OPCODE_DATA(y) BR_DATA(y) EXTRA_TRAP_DATA(z)
-        DIRECTIVE_DATA(d){",", TokenType::COMMA}};
+        DIRECTIVE_DATA(d){",", TOKEN_TYPE::COMMA}};
 #undef x
 #undef y
 #undef z
@@ -64,8 +64,8 @@ bool Tokenizer::isLabel(string &str) {
   return true;
 }
 
-TokenType Tokenizer::getTokenType(string &str) {
-  auto type = TokenType::INVALID;
+TOKEN_TYPE Tokenizer::getTokenType(string &str) {
+  auto type = TOKEN_TYPE::INVALID;
   auto tokenTypeSearch = str2tokentype.find(str);
 
   if (tokenTypeSearch != str2tokentype.end()) {
@@ -74,13 +74,13 @@ TokenType Tokenizer::getTokenType(string &str) {
 
   } else if (str.length() > 2 and str.front() == '"' and str.back() == '"') {
     // string
-    type = TokenType::STR;
+    type = TOKEN_TYPE::STR;
   } else if (isNumber(str)) {
     // number
-    type = TokenType::NUM;
+    type = TOKEN_TYPE::NUM;
   } else if (isLabel(str)) {
     // label
-    type = TokenType::LABEL;
+    type = TOKEN_TYPE::LABEL;
   }
 
   return type;
@@ -208,7 +208,7 @@ void Tokenizer::printTokens(std::vector<Token> &tokens) {
       cout << line << " :";
     }
     // print token
-    if (t.type != TokenType::COMMA)
+    if (t.type != TOKEN_TYPE::COMMA)
       cout << " ";
     cout << t;
   }
@@ -222,7 +222,7 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
   cout << line << " :";
   for (auto t : tokens) {
     if (t.line == line) {
-      if (t.type != TokenType::COMMA)
+      if (t.type != TOKEN_TYPE::COMMA)
         cout << " ";
       cout << t;
     }
@@ -233,12 +233,12 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
 void Tokenizer::tokensErrorCheck(std::vector<Token> &tokens) {
   std::vector<int> errorLocations;
   for (int i = 0; i < tokens.size(); i++) {
-    if (tokens[i].type == TokenType::INVALID) {
+    if (tokens[i].type == TOKEN_TYPE::INVALID) {
       errorLocations.push_back(i);
     }
   }
   // print errors if found
-  if (tokens.size() > 0) {
+  if (errorLocations.size() > 0) {
     for (auto t : errorLocations) {
       cout << "Invalid token: " << tokens[t].lexme << " at line "
            << tokens[t].line << "\n";

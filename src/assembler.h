@@ -22,9 +22,10 @@ private:
   void secondPass();
   void errorChecks();
   void writeToFile(vector<instruction> data, string filename);
-  void writeToHex(vector<instruction> data, string filename);
-  void writeToObj(vector<instruction> data, string filename);
-  void writeToBin(vector<instruction> data, string filename);
+  void writeToHex(vector<instruction> &data, string &filename);
+  void writeToObj(vector<instruction> &data, string &filename);
+  void writeToBin(vector<instruction> &data, string &filename);
+  void writeSymbolTable(unordered_map<string, int> symTab, string filename);
 
   void error(string erMsg, int location);
   void error(string erMsg);

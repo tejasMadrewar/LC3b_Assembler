@@ -45,7 +45,7 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
   // tokenize
   tokens = tokenizer.tokenize(buffer);
-  // tokenizer.printTokens(tokens);
+  tokenizer.printTokens(tokens);
 
   // run all passes
   firstPass();
@@ -57,16 +57,6 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
 vector<instruction> Assembler::assemble(string filename) {
   ifstream file(filename);
-  auto hexFile = filename.substr(0, filename.find_last_of('.')) + ".hex";
-  auto outputFile = filename.substr(0, filename.find_last_of('.')) + ".bin";
-  ofstream ofile(outputFile);
-
-  // remove previous data
-  binaryData.clear();
-  symbolTable.clear();
-  patchLocations.clear();
-  directives.clear();
-  errors.clear();
 
   // read file
   if (file.is_open()) {
@@ -75,9 +65,8 @@ vector<instruction> Assembler::assemble(string filename) {
                   istreambuf_iterator<char>());
     assembleBuffer(buffer);
     // write data to output file
-    writeToFile(binaryData, outputFile);
+    writeToFile(binaryData, filename);
     // writeToHex(binaryData, hexFile);
-    tokenizer.printTokens(tokens);
   } else {
     cout << "Unable to open file\n";
   }
@@ -89,12 +78,11 @@ void Assembler::error(string message, int loc) {
 
   auto t = tokens[loc];
   cout << "\nError: " << message;
-  cout << " at line:" << t.line;
-  cout << " on word:" << t.col << "\n";
-  // print that line
-  for (auto i : tokens)
-    if (i.line == t.line)
-      cout << i.lexme << " ";
+  cout << " in line " << t.line;
+  cout << " at " << t.lexme << "\n";
+  // cout << " on word:" << t.col << "\n";
+  //  print that line
+  tokenizer.printLine(loc, tokens);
 
   exit(1);
 }
@@ -191,7 +179,7 @@ void Assembler::firstPass() {
   for (int i = 0; i < tokens.size(); i++) {
     auto t = tokens[i];
 
-    if (t.type == TokenType::OP) {
+    if (t.type == TOKEN_TYPE::OP) {
       // opcode
       // tokenizer.printLine(i, tokens);
       auto inst = opcode2instruction(i);
@@ -208,11 +196,11 @@ void Assembler::firstPass() {
           patchLocations.push_back(d);
         }
       }
-    } else if (t.type == TokenType::DIRECTIVE) {
+    } else if (t.type == TOKEN_TYPE::DIRECTIVE) {
       // directive
       auto data = directive2instructions(i);
       binaryData.insert(binaryData.end(), data.begin(), data.end());
-    } else if (t.type == TokenType::TRAP) {
+    } else if (t.type == TOKEN_TYPE::TRAP) {
       auto trapSearch = trap2hex.find(t.lexme);
       if (trapSearch == trap2hex.end())
         error("TRAP not implemented", i);
@@ -224,7 +212,7 @@ void Assembler::firstPass() {
       inst.b10 = false;
       inst.b11 = false;
       binaryData.push_back(inst);
-    } else if (t.type == TokenType::LABEL) {
+    } else if (t.type == TOKEN_TYPE::LABEL) {
       // add to symbol Table
 
       // check if label present of not
@@ -234,7 +222,7 @@ void Assembler::firstPass() {
         errors.push_back({Error::labelDefinedOnlyOnce, i});
       }
     } else {
-      error("Unknown Token", i);
+      error("Expected Opcode", i);
     }
   }
   // tokenizer.printTokens(tokens);
@@ -416,51 +404,45 @@ void Assembler::errorChecks() {
   }
 }
 
-void Assembler::writeToFile(vector<instruction> data, string outputFile) {
-  fstream ofile(outputFile);
+void Assembler::writeToFile(vector<instruction> data, string fileName) {
+
+  auto hexFile = fileName.substr(0, fileName.find_last_of('.')) + ".hex";
+  auto binFile = fileName.substr(0, fileName.find_last_of('.')) + ".bin";
+  auto objFile = fileName.substr(0, fileName.find_last_of('.')) + ".obj";
+  auto symFile = fileName.substr(0, fileName.find_last_of('.')) + ".symtab";
+
   auto endianAdjusted = data;
-
-  // change to big endianess
-  for (auto &i : endianAdjusted) {
-    auto c1 = i.c1;
-    i.c1 = i.c2;
-    i.c2 = c1;
+  instruction address;
+  address.i = UINT16_MAX;
+  for (auto d : directives) {
+    if (d.directive == ORIG) {
+      address.i = d.number;
+      break;
+    }
   }
 
-  // write data
-  if (ofile.is_open()) {
-    cout << "Writing to " << outputFile << " \n";
-    ofile.write((char *)&endianAdjusted[0],
-                endianAdjusted.size() * sizeof(instruction));
-  } else {
-    cout << "Unable to open file" << outputFile << "\n";
-  }
+  // add ORIG address
+  endianAdjusted.insert(endianAdjusted.begin(), address);
+
+  //// change to big endianess
+  // for (auto &i : endianAdjusted) {
+  //   auto c1 = i.c1;
+  //   i.c1 = i.c2;
+  //   i.c2 = c1;
+  // }
+
+  writeToObj(endianAdjusted, objFile);
+  writeToHex(endianAdjusted, hexFile);
+  writeToBin(endianAdjusted, binFile);
+  writeSymbolTable(symbolTable, symFile);
 }
 
-void Assembler::writeToHex(vector<instruction> data, string hexFile) {
+void Assembler::writeToHex(vector<instruction> &data, string &hexFile) {
   fstream ofile(hexFile, fstream::out);
-  auto endianAdjusted = data;
-
   // write data
   if (ofile.is_open()) {
     cout << "Writing to " << hexFile << " \n";
-
-    bool origFound = false;
-    for (auto i : directives) {
-      if (i.directive == ORIG) {
-        ofile << "0x" << hex << setw(4) << setfill('0') << i.number << "\n";
-        origFound = true;
-        break;
-      }
-    }
-    if (!origFound) {
-      cout << "ORIG not found\n";
-      exit(0);
-    }
-
-    // ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
-    //  program
-    for (auto i : endianAdjusted) {
+    for (auto i : data) {
       ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
     }
   } else {
@@ -468,14 +450,33 @@ void Assembler::writeToHex(vector<instruction> data, string hexFile) {
   }
 }
 
-void writeToObj(vector<instruction> data, string filename) {
-  cout << "writing obj file not implemented";
-  exit(1);
+void Assembler::writeToObj(vector<instruction> &data, string &filename) {
+  fstream ofile(filename, fstream::out);
+  // write data
+  if (ofile.is_open()) {
+    cout << "Writing to " << filename << " \n";
+    ofile.write((char *)&data[0], data.size() * sizeof(instruction));
+  } else {
+    cout << "Unable to open file" << filename << "\n";
+  }
 }
 
-void writeToBin(vector<instruction> data, string filename) {
-  cout << "writing bin file not implemented";
-  exit(1);
+void Assembler::writeToBin(vector<instruction> &data, string &filename) {
+  fstream ofile(filename, fstream::out);
+  // write data
+  if (ofile.is_open()) {
+    cout << "Writing to " << filename << " \n";
+    for (auto i : data) {
+      ofile << "0b" << bitset<16>(i.i) << "\n";
+    }
+  } else {
+    cout << "Unable to open file" << filename << "\n";
+  }
+}
+
+void Assembler::writeSymbolTable(unordered_map<string, int> symTab,
+                                 string filename) {
+  fstream ofile(filename, fstream::out);
 }
 
 instruction Assembler::assembleADD(int &loc) {

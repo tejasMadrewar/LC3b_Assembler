@@ -18,18 +18,21 @@ int main(int argc, char **argv) {
   //    dis.disassemble(a);
   //     as.assemble("examples/DIRECTIVE_sample.asm");
 
-  // auto a = as.assemble("examples/example0.asm");
-  // auto b = as.assemble("examples/example1.asm");
-  // auto c = as.assemble("examples/example2.asm");
-  //  auto d = as.assemble("examples/code.asm");
+#if 1
+  auto a = as.assemble("examples/example0.asm");
+  auto b = as.assemble("examples/example1.asm");
+  auto c = as.assemble("examples/example2.asm");
+#endif
 
-  // auto e1 = as.assemble("examples/errorTests/ORIG_END_errors.asm");
-  //  auto e2 = as.assemble("examples/errorTests/no_inst.asm");
-  //  auto e3 = as.assemble("examples/errorTests/multipleORIG.asm");
-  // auto e4 = as.assemble("examples/errorTests/No_END_errors.asm");
-  // auto e5 = as.assemble("examples/errorTests/multipleLabelErrors.asm");
-  // auto e6 = as.assemble("examples/errorTests/undefinedLabel.asm");
+#if 0
+  auto e1 = as.assemble("examples/errorTests/ORIG_END_errors.asm");
+  auto e2 = as.assemble("examples/errorTests/no_inst.asm");
+  auto e3 = as.assemble("examples/errorTests/multipleORIG.asm");
+  auto e4 = as.assemble("examples/errorTests/No_END_errors.asm");
+  auto e5 = as.assemble("examples/errorTests/multipleLabelErrors.asm");
+  auto e6 = as.assemble("examples/errorTests/undefinedLabel.asm");
   auto e7 = as.assemble("examples/errorTests/InvalidTokenErrors.asm");
+#endif
 #else
   fstream f("examples/example2.asm");
   string buffer((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());

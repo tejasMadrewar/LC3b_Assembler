@@ -13,7 +13,7 @@ using std::ostream;
   d(INVALID) d(OP) d(REG) d(NUM) d(DIRECTIVE) d(LABEL) d(TRAP) d(COMMA) d(STR)
 
 #define x(a) a,
-enum class TokenType { TOKENTYPE_DATA(x) };
+enum class TOKEN_TYPE { TOKENTYPE_DATA(x) };
 #undef x
 
 #define x(a) #a,
@@ -24,7 +24,7 @@ struct Token {
   string lexme;
   int line;
   int col;
-  TokenType type;
+  TOKEN_TYPE type;
 };
 
 ostream &operator<<(ostream &os, Token &t);
@@ -40,6 +40,6 @@ private:
   bool isNumber(string &str);
   bool isLabel(string &str);
   void tokensErrorCheck(vector<Token> &tokens);
-  TokenType getTokenType(string &str);
-  static const unordered_map<string, TokenType> str2tokentype;
+  TOKEN_TYPE getTokenType(string &str);
+  static const unordered_map<string, TOKEN_TYPE> str2tokentype;
 };
