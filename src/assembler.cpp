@@ -476,6 +476,23 @@ void Assembler::writeToBin(vector<instruction> &data, string &filename) {
 void Assembler::writeSymbolTable(unordered_map<string, int> symTab,
                                  string filename) {
   fstream ofile(filename, fstream::out);
+  uint16_t ORIG_ADDR = UINT16_MAX;
+  for (auto d : directives) {
+    if (d.directive == ORIG) {
+      ORIG_ADDR = d.number;
+      break;
+    }
+  }
+
+  if (ofile.is_open()) {
+    cout << "Writing to " << filename << " \n";
+    for (auto s : symTab) {
+      ofile << s.first << "\t-> 0x" << hex << setw(4) << setfill('0')
+            << (s.second + ORIG_ADDR) << "\n";
+    }
+  } else {
+    cout << "Unable to open file" << filename << "\n";
+  }
 }
 
 instruction Assembler::assembleADD(int &loc) {

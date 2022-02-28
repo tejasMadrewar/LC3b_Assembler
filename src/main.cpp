@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
   auto a = as.assemble("examples/example0.asm");
   auto b = as.assemble("examples/example1.asm");
   auto c = as.assemble("examples/example2.asm");
+  auto d = as.assemble("examples/sample.asm");
 #endif
 
 #if 0
