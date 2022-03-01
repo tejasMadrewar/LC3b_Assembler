@@ -1,18 +1,21 @@
 #include "assembler.h"
 #include "disassembler.h"
 #include "opcode_data.h"
-#include "tokenizer.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cctype>
 #include <cstdlib>
 #include <ctype.h>
 #include <set>
 
-#include <bitset>
-
 using namespace std;
 
+#define ToNBitSign(NUM, n)                                                     \
+  (((NUM) < 0 ? (0x1 << (n - 1) | (((0x1 << (n - 1)) - 1) & (NUM))) : (NUM)) & \
+   ((0x1 << n) - 1))
+
+// DEBUG LOG
 #if 0
 #define DEBUG_LOG(OPCODE)                                                      \
   tokenizer.printLine(loc, tokens);                                            \
@@ -488,7 +491,7 @@ void Assembler::writeSymbolTable(unordered_map<string, int> symTab,
     cout << "Writing to " << filename << " \n";
     for (auto s : symTab) {
       ofile << s.first << "\t-> 0x" << hex << setw(4) << setfill('0')
-            << (s.second + ORIG_ADDR) << "\n";
+            << ((s.second * 2) + ORIG_ADDR) << "\n";
     }
   } else {
     cout << "Unable to open file" << filename << "\n";
@@ -522,7 +525,7 @@ instruction Assembler::assembleADD(int &loc) {
     if (imm5 != UINT16_MAX) {
       // third number
       i.b5 = true;
-      i.IMM5 = imm5 & 0b11111;
+      i.IMM5 = ToNBitSign(imm5, 5);
     } else {
       // third register
       auto r4 = parseRegister(loc);

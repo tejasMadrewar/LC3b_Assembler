@@ -1,7 +1,8 @@
 docs/*.pdf
-src/examples/*.bin
+*.obj
+*.bin
+*.symtab
 src/examples/*.hex
-src/examples/errorTests/*.bin
 src/examples/errorTests/*.hex
 src/obj/
 src/.cache/
