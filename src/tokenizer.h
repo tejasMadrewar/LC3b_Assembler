@@ -34,6 +34,7 @@ public:
   vector<Token> tokenize(string &buffer);
   void printTokens(std::vector<Token> &tokens);
   void printLine(int location, vector<Token> &tokens);
+  string getLine(int location, vector<Token> &tokens);
 
 private:
   bool isWhiteSpace(char c) { return isspace(c); }

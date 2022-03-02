@@ -25,6 +25,7 @@ private:
   void writeToHex(vector<instruction> &data, string &filename);
   void writeToBin(vector<instruction> &data, string &filename);
   void writeToObj(vector<instruction> data, string &filename);
+  void writeToDebug(vector<instruction> data, string &filename);
   void writeSymbolTable(unordered_map<string, int> symTab, string filename);
 
   void error(string erMsg, int location);
@@ -79,5 +80,6 @@ private:
   vector<instLabelData> patchLocations;
   vector<directiveInfo> directives;
   vector<ErrorInfo> errors;
+  unordered_map<int, int> offset2line;
   static const unordered_map<Opcode, uint32_t> labelInst;
 };

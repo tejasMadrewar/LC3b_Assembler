@@ -19,9 +19,9 @@ int main(int argc, char **argv) {
   //     as.assemble("examples/DIRECTIVE_sample.asm");
 
 #if 1
-  auto a = as.assemble("examples/example0.asm");
-  auto b = as.assemble("examples/example1.asm");
-  auto c = as.assemble("examples/example2.asm");
+  // auto a = as.assemble("examples/example0.asm");
+  // auto b = as.assemble("examples/example1.asm");
+  // auto c = as.assemble("examples/example2.asm");
   auto d = as.assemble("examples/sample.asm");
 #endif
 

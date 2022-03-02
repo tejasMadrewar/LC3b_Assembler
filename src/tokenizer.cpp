@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -228,6 +229,23 @@ void Tokenizer::printLine(int location, std::vector<Token> &tokens) {
     }
   }
   cout << "\n";
+}
+
+string Tokenizer::getLine(int location, vector<Token> &tokens) {
+  string str;
+  if (location < 0)
+    return str;
+  const auto line = tokens[location].line;
+  // str += std::to_string(line) + " :";
+  for (auto t : tokens) {
+    if (t.line == line) {
+      if (t.type != TOKEN_TYPE::COMMA)
+        str += " ";
+      str += t.lexme;
+    }
+  }
+
+  return str;
 }
 
 void Tokenizer::tokensErrorCheck(std::vector<Token> &tokens) {

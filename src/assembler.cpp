@@ -185,6 +185,7 @@ void Assembler::firstPass() {
     if (t.type == TOKEN_TYPE::OP) {
       // opcode
       // tokenizer.printLine(i, tokens);
+      offset2line.insert({binaryData.size(), i});
       auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
       // save locations to patch
@@ -315,7 +316,8 @@ void Assembler::secondPass() {
     case 0b0000: {
       auto address = symbolTable.find(t.lexme);
       if (address != symbolTable.end()) {
-        inst.PCoffset9 = address->second * 2;
+        auto offset = (address->second - l.offset);
+        inst.PCoffset9 = ToNBitSign(offset * 2, 9);
       }
     } break;
       // JSR
@@ -413,6 +415,7 @@ void Assembler::writeToFile(vector<instruction> data, string fileName) {
   auto binFile = fileName.substr(0, fileName.find_last_of('.')) + ".bin";
   auto objFile = fileName.substr(0, fileName.find_last_of('.')) + ".obj";
   auto symFile = fileName.substr(0, fileName.find_last_of('.')) + ".symtab";
+  auto debugFile = fileName.substr(0, fileName.find_last_of('.')) + ".debug";
 
   auto endianAdjusted = data;
   instruction address;
@@ -431,6 +434,7 @@ void Assembler::writeToFile(vector<instruction> data, string fileName) {
   writeToHex(endianAdjusted, hexFile);
   writeToBin(endianAdjusted, binFile);
   writeSymbolTable(symbolTable, symFile);
+  writeToDebug(endianAdjusted, debugFile);
 }
 
 void Assembler::writeToHex(vector<instruction> &data, string &hexFile) {
@@ -439,7 +443,8 @@ void Assembler::writeToHex(vector<instruction> &data, string &hexFile) {
   if (ofile.is_open()) {
     cout << "Writing to " << hexFile << " \n";
     for (auto i : data) {
-      ofile << "0x" << hex << setw(4) << setfill('0') << i.i << "\n";
+      ofile << "0x" << uppercase << hex << setw(4) << setfill('0') << i.i
+            << "\n";
     }
   } else {
     cout << "Unable to open file" << hexFile << "\n";
@@ -460,6 +465,23 @@ void Assembler::writeToObj(vector<instruction> data, string &filename) {
     ofile.write((char *)&data[0], data.size() * sizeof(instruction));
   } else {
     cout << "Unable to open file" << filename << "\n";
+  }
+}
+
+void Assembler::writeToDebug(vector<instruction> data, string &debugFile) {
+  fstream ofile(debugFile, fstream::out);
+  // write data
+  if (ofile.is_open()) {
+    cout << "Writing to " << debugFile << " \n";
+    // for (auto i : data) {
+    for (int i = 0; i < data.size(); i++) {
+      ofile << "0x" << uppercase << hex << setw(4) << setfill('0') << data[i].i;
+      if (offset2line.find(i) != offset2line.end())
+        ofile << " -> " << tokenizer.getLine(offset2line[i], tokens);
+      ofile << "\n";
+    }
+  } else {
+    cout << "Unable to open file" << debugFile << "\n";
   }
 }
 
