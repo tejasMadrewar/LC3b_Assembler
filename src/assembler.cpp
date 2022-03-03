@@ -166,14 +166,14 @@ void Assembler::parseRegRegNum(int &loc, Register &r1, Register &r2,
   loc++;
 
   expect(",", loc, "Expected ','");
-
   loc++;
+
   r2 = parseRegister(loc);
-
   loc++;
+
   expect(",", loc, "Expected ','");
-
   loc++;
+
   num = parseNumber(loc);
 }
 
@@ -185,7 +185,7 @@ void Assembler::firstPass() {
     if (t.type == TOKEN_TYPE::OP) {
       // opcode
       // tokenizer.printLine(i, tokens);
-      offset2line.insert({binaryData.size(), i});
+      offset2line.insert({binaryData.size() + 1, i});
       auto inst = opcode2instruction(i);
       binaryData.push_back(inst);
       // save locations to patch
@@ -314,26 +314,27 @@ void Assembler::secondPass() {
     switch (opcode) {
       // BRANCH
     case 0b0000: {
-      auto address = symbolTable.find(t.lexme);
-      if (address != symbolTable.end()) {
-        auto offset = (address->second - l.offset);
-        inst.PCoffset9 = ToNBitSign(offset * 2, 9);
+      auto label = symbolTable.find(t.lexme);
+      if (label != symbolTable.end()) {
+        auto PCoffset = (label->second - l.offset - 1);
+        inst.PCoffset9 = ToNBitSign(PCoffset, 9);
       }
     } break;
       // JSR
     case 0b0100: {
       if (inst.b11) {
-        auto address = symbolTable.find(t.lexme);
-        if (address != symbolTable.end()) {
-          inst.Poffset11 = address->second * 2;
+        auto label = symbolTable.find(t.lexme);
+        if (label != symbolTable.end()) {
+          inst.Poffset11 = label->second * 2;
         }
       }
     } break;
       // LEA
     case 0b1110: {
-      auto address = symbolTable.find(t.lexme);
-      if (address != symbolTable.end()) {
-        inst.PCoffset9 = address->second * 2;
+      auto label = symbolTable.find(t.lexme);
+      if (label != symbolTable.end()) {
+        auto PCoffset = (label->second - l.offset - 1);
+        inst.PCoffset9 = ToNBitSign(PCoffset, 9);
       }
     } break;
     }
@@ -736,7 +737,7 @@ instruction Assembler::assembleLDW(int &loc) {
     i.DR = dr & 0b111;
     i.BaseR = baseR & 0b111;
     if (boffset6 != UINT16_MAX) {
-      i.boffset6 = boffset6 & 0b111111;
+      i.offset6 = boffset6 & 0b111111;
     }
   }
   DEBUG_LOG(LDW)
