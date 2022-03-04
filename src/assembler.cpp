@@ -325,7 +325,8 @@ void Assembler::secondPass() {
       if (inst.b11) {
         auto label = symbolTable.find(t.lexme);
         if (label != symbolTable.end()) {
-          inst.Poffset11 = label->second * 2;
+          auto PCoffset = (label->second - l.offset - 1);
+          inst.Poffset11 = ToNBitSign(PCoffset, 11);
         }
       }
     } break;

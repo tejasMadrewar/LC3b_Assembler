@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
   auto b = as.assemble("examples/example1.asm");
   auto c = as.assemble("examples/example2.asm");
   auto d = as.assemble("examples/sample.asm");
+  auto e = as.assemble("examples/label_instructions.asm");
 #endif
 
 #if 0
