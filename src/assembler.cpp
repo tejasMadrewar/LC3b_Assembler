@@ -15,6 +15,7 @@ using namespace std;
   (((NUM) < 0 ? (0x1 << (n - 1) | (((0x1 << (n - 1)) - 1) & (NUM))) : (NUM)) & \
    ((0x1 << n) - 1))
 
+#define PRINT_TO_SCREEN 0
 // DEBUG LOG
 #if 0
 #define DEBUG_LOG(OPCODE)                                                      \
@@ -48,7 +49,9 @@ vector<instruction> Assembler::assembleBuffer(string &buffer) {
 
   // tokenize
   tokens = tokenizer.tokenize(buffer);
+#if PRINT_TO_SCREEN
   tokenizer.printTokens(tokens);
+#endif
 
   // run all passes
   firstPass();
