@@ -58,6 +58,7 @@ private:
   instruction assembleSTW(int &location);
   instruction assembleTRAP(int &location);
   instruction assembleXOR(int &location);
+  instruction assembleNOP(int &location);
 
   vector<instruction> directive2instructions(int &location);
 

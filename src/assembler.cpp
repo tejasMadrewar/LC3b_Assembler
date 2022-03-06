@@ -1004,6 +1004,17 @@ instruction Assembler::assembleXOR(int &loc) {
   return i;
 }
 
+instruction Assembler::assembleNOP(int &loc) {
+  instruction i;
+  i.i = UINT16_MAX;
+  if (tokens[loc].lexme == "NOP") {
+    i.i = 0;
+    loc++;
+  }
+  DEBUG_LOG(NOP)
+  return i;
+}
+
 vector<instruction> Assembler::assembleORIG(int &loc) {
   vector<instruction> data;
   directiveInfo info;

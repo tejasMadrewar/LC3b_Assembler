@@ -50,8 +50,8 @@ bool Tokenizer::isNumber(string &str) {
 
 bool Tokenizer::isLabel(string &str) {
   if (str.length() > 0) {
-    // first char alpha
-    if (!isalpha(str[0]))
+    // first char non alpha or 'x'
+    if (!isalpha(str[0]) or str[0] == 'x')
       return false;
 
     // all char alpha numeric

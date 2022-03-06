@@ -43,6 +43,7 @@ string Disassembler::disInst(instruction i) {
   case AND:
     return disAND(i);
   case BR:
+  case NOP:
     return disBR(i);
   case JMP:
   case RET:
@@ -96,6 +97,12 @@ string Disassembler::disAND(instruction i) {
 
 string Disassembler::disBR(instruction i) {
   uint32_t mask = 0;
+
+  // check for NOP
+  if (i.i == 0) {
+    return "NOP";
+  }
+
   mask |= i.n << 2;
   mask |= i.z << 1;
   mask |= i.p << 0;

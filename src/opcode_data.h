@@ -29,7 +29,8 @@ d(RSHFA,0b1101)\
 d(STB,  0b0011)\
 d(STW,  0b0111)\
 d(TRAP, 0b1111)\
-d(XOR,  0b1001)
+d(XOR,  0b1001)\
+d(NOP,  0b0000)
 
 #define BR_DATA(d)\
 d(BRn,   0b0000)\
@@ -41,7 +42,7 @@ d(BRnz,  0b0000)\
 d(BRnzp, 0b0000)
 
 #define BR_MASK(d)\
-d(BR,    0b000)\
+d(BR,    0b111)\
 d(BRn,   0b100)\
 d(BRz,   0b010)\
 d(BRp,   0b001)\

@@ -361,7 +361,7 @@ TEST_CASE("XOR tests") {
   }
 }
 
-TEST_CASE("different TRAP tests") {
+TEST_CASE("different TRAP tests"){
 #define x(a, b)                                                                \
   SECTION(#a) {                                                                \
     string str = #a "\n.END";                                                  \
@@ -371,6 +371,16 @@ TEST_CASE("different TRAP tests") {
     REQUIRE(i.at(0).trapvect8 == b);                                           \
   }
 
-  EXTRA_TRAP_DATA(x)
+    EXTRA_TRAP_DATA(x)
 #undef x
+}
+
+TEST_CASE("NOP tests") {
+  string test1 = "NOP \n.END";
+
+  SECTION(test1) {
+    auto i = assembler.assembleBuffer(test1);
+    REQUIRE(i.size() == 1);
+    REQUIRE(i.at(0).i == 0);
+  }
 }
