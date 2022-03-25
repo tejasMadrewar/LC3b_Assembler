@@ -71,7 +71,7 @@ TEST_CASE("AND tests") {
 TEST_CASE("BR tests") {
 
 #define e(a, b)                                                                \
-  string test##a = #a " LABEL \n.END";                                         \
+  string test##a = "LABEL1 " #a " LABEL1 \n.END";                              \
   SECTION(test##a) {                                                           \
     auto i = assembler.assembleBuffer(test##a);                                \
     uint16_t mask = 0;                                                         \
@@ -132,7 +132,7 @@ TEST_CASE("JMP, RET tests") {
 
 TEST_CASE("JSR, JSRR tests") {
 
-  string test1 = "JSR LABEL \n.END";
+  string test1 = "LABEL1 JSR LABEL1 \n.END";
   string test2 = "JSRR R3 \n.END";
 
   SECTION("JSR LABEL") {
@@ -186,7 +186,7 @@ TEST_CASE("LOAD instructions tests") {
   }
 
   SECTION("LEA - load effective address") {
-    string test = "LEA R4,TARGET \n.END";
+    string test = "TARGET LEA R4,TARGET \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(LEA));
     REQUIRE(i.size() == 1);
@@ -382,5 +382,43 @@ TEST_CASE("NOP tests") {
     auto i = assembler.assembleBuffer(test1);
     REQUIRE(i.size() == 1);
     REQUIRE(i.at(0).i == 0);
+  }
+}
+
+TEST_CASE("LABEL address locations") {
+  string test1 = "BR LABEL1 LABEL1 .END";
+  string test2 = "BR LABEL1\
+		  BR LABEL1\
+		  LABEL1 .END";
+  string test3 = "LABEL1\
+		  BR LABEL1\
+		  BR LABEL1\
+		  .END ";
+
+  SECTION("zero address label") {
+    auto i = assembler.assembleBuffer(test1);
+    REQUIRE(i.size() == 1);
+    REQUIRE(i.at(0).OP == 0);
+    REQUIRE(i.at(0).PCoffset9 == 0);
+  }
+
+  SECTION("multiple positive Poffsets") {
+    auto i = assembler.assembleBuffer(test2);
+    REQUIRE(i.size() == 2);
+    REQUIRE(i.at(0).OP == 0);
+    REQUIRE(i.at(0).PCoffset9 == 1);
+
+    REQUIRE(i.at(1).OP == 0);
+    REQUIRE(i.at(1).PCoffset9 == 0);
+  }
+
+  SECTION("multiple negative Poffsets") {
+    auto i = assembler.assembleBuffer(test3);
+    REQUIRE(i.size() == 2);
+    REQUIRE(i.at(0).OP == 0);
+    REQUIRE(i.at(0).PCoffset9 == 0x1ff);
+
+    REQUIRE(i.at(1).OP == 0);
+    REQUIRE(i.at(1).PCoffset9 == 0x1fe);
   }
 }

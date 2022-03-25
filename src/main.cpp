@@ -6,8 +6,36 @@
 
 using namespace std;
 
-int main(int argc, char **argv) {
+#define DEBUG 1
 
+#if DEBUG
+void test();
+#endif
+
+void runWithArgs(int argc, char **argv);
+
+int main(int argc, char **argv) {
+#if DEBUG
+  test();
+#else
+  runWithArgs(argc, argv);
+#endif
+  return 0;
+}
+
+void runWithArgs(int argc, char **argv) {
+  if (argc < 2) {
+    cout << "LC3b assembler\nUse: " << argv[0] << " file.asm\n";
+    return;
+  } else {
+    Assembler asssembler;
+    auto asm_file = string(argv[1]);
+    asssembler.assemble(asm_file);
+  }
+}
+
+#if DEBUG
+void test() {
   Assembler as;
   Disassembler dis;
 
@@ -19,6 +47,10 @@ int main(int argc, char **argv) {
   //     as.assemble("examples/DIRECTIVE_sample.asm");
 
 #if 1
+  auto a = as.assemble("examples/label_address.asm");
+  dis.disassemble(a);
+#endif
+#if 0
   auto a = as.assemble("examples/example0.asm");
   auto b = as.assemble("examples/example1.asm");
   auto c = as.assemble("examples/example2.asm");
@@ -45,6 +77,5 @@ int main(int argc, char **argv) {
   auto a = tokenizer.tokenize(buffer);
   tokenizer.printTokens(a);
 #endif
-
-  return 0;
 }
+#endif
