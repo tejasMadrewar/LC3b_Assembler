@@ -32,6 +32,7 @@ clean:
 	if exist $(OBJDIR) rmdir /s /q $(OBJDIR)
 	if exist .cache rmdir /s /q .cache
 	del *.pdb *.ilk examples\*.bin compile_commands.json $(EXE)
+	del examples\*.hex examples\*.debug examples\*.symtab examples\*.obj
 
 $(DEPDIR): ; mkdir $@
 
