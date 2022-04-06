@@ -29,6 +29,7 @@ d(ORIG_END_location,    ".ORIG/END must be first/last line.")\
 d(onlyOneORIG,          "one .ORIG is allowed per file.")\
 d(assemblyBeforeORIG,   "instructions must start after .ORIG.")\
 d(mustEndWithEND,       "all programs must end with .END")\
+d(mustStartWithORIG,    "all programs must start with .ORIG")\
 d(nothingBeforeORIG,    "nothing should appear before .ORIG")\
 d(labelDefinedOnlyOnce, "label can only be defined once.")\
 d(unknownLabel,         "label is referenced but NOT defined.")\

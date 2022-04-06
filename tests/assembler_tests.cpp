@@ -13,8 +13,8 @@
 Assembler assembler;
 
 TEST_CASE("ADD tests") {
-  string test1 = "ADD R2, R3, R4 \n.END";
-  string test2 = "ADD R2, R3, #7 \n.END";
+  string test1 = ".ORIG x3000\n ADD R2, R3, R4 \n.END";
+  string test2 = ".ORIG x3000\n ADD R2, R3, #7 \n.END";
   auto i = assembler.assembleBuffer(test1);
   auto size = i.size();
 
@@ -43,8 +43,8 @@ TEST_CASE("ADD tests") {
 }
 
 TEST_CASE("AND tests") {
-  string test1 = "AND R2, R3, R4 \n.END";
-  string test2 = "AND R2, R3, #7 \n.END";
+  string test1 = ".ORIG x3000\n AND R2, R3, R4 \n.END";
+  string test2 = ".ORIG x3000\n AND R2, R3, #7 \n.END";
   auto i = assembler.assembleBuffer(test1);
   auto size = i.size();
 
@@ -71,7 +71,7 @@ TEST_CASE("AND tests") {
 TEST_CASE("BR tests") {
 
 #define e(a, b)                                                                \
-  string test##a = "LABEL1 " #a " LABEL1 \n.END";                              \
+  string test##a = ".ORIG x3000\n LABEL1 " #a " LABEL1 \n.END";                \
   SECTION(test##a) {                                                           \
     auto i = assembler.assembleBuffer(test##a);                                \
     uint16_t mask = 0;                                                         \
@@ -90,8 +90,8 @@ TEST_CASE("BR tests") {
 }
 
 TEST_CASE("JMP, RET tests") {
-  string test1 = "JMP R2 \n.END";
-  string test2 = "RET \n.END";
+  string test1 = ".ORIG x3000\n JMP R2 \n.END";
+  string test2 = ".ORIG x3000\n RET \n.END";
 
   SECTION("JMP") {
     auto i = assembler.assembleBuffer(test1);
@@ -132,8 +132,8 @@ TEST_CASE("JMP, RET tests") {
 
 TEST_CASE("JSR, JSRR tests") {
 
-  string test1 = "LABEL1 JSR LABEL1 \n.END";
-  string test2 = "JSRR R3 \n.END";
+  string test1 = ".ORIG x3000\n LABEL1 JSR LABEL1 \n.END";
+  string test2 = ".ORIG x3000\n JSRR R3 \n.END";
 
   SECTION("JSR LABEL") {
     auto i = assembler.assembleBuffer(test1);
@@ -166,7 +166,7 @@ TEST_CASE("JSR, JSRR tests") {
 TEST_CASE("LOAD instructions tests") {
 
   SECTION("LDB - load byte") {
-    string test = "LDB R4,R2,#10 \n.END";
+    string test = ".ORIG x3000\n LDB R4,R2,#10 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(LDB));
     REQUIRE(i.size() == 1);
@@ -176,7 +176,7 @@ TEST_CASE("LOAD instructions tests") {
   }
 
   SECTION("LDW - load word") {
-    string test = "LDW R4,R2,#10 \n.END";
+    string test = ".ORIG x3000\n LDW R4,R2,#10 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(LDW));
     REQUIRE(i.size() == 1);
@@ -186,7 +186,7 @@ TEST_CASE("LOAD instructions tests") {
   }
 
   SECTION("LEA - load effective address") {
-    string test = "TARGET LEA R4,TARGET \n.END";
+    string test = ".ORIG x3000\n TARGET LEA R4,TARGET \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(LEA));
     REQUIRE(i.size() == 1);
@@ -197,7 +197,7 @@ TEST_CASE("LOAD instructions tests") {
 
 TEST_CASE("NOT tests") {
   SECTION("RET") {
-    string test = "NOT R4,R2 \n.END";
+    string test = ".ORIG x3000\n NOT R4,R2 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i.size() == 1);
     REQUIRE(i[0].OP == op2hex.at(NOT));
@@ -215,7 +215,7 @@ TEST_CASE("NOT tests") {
 
 TEST_CASE("RET tests") {
   SECTION("RET") {
-    string test = "RET \n.END";
+    string test = ".ORIG x3000\n RET \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i.size() == 1);
     REQUIRE(i[0].OP == op2hex.at(RET));
@@ -239,7 +239,7 @@ TEST_CASE("RET tests") {
 
 TEST_CASE("RTI tests") {
   SECTION("RTI") {
-    string test = "RTI \n.END";
+    string test = ".ORIG x3000\n RTI \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i.size() == 1);
     REQUIRE(i[0].OP == op2hex.at(RTI));
@@ -261,7 +261,7 @@ TEST_CASE("RTI tests") {
 
 TEST_CASE("SHF - bit shift tests") {
   SECTION("LSHF") {
-    string test = "LSHF R2,R3,#3 \n.END";
+    string test = ".ORIG x3000\n LSHF R2,R3,#3 \n.END";
     auto i = assembler.assembleBuffer(test);
 
     REQUIRE(i.size() == 1);
@@ -274,7 +274,7 @@ TEST_CASE("SHF - bit shift tests") {
   }
 
   SECTION("RSHFL") {
-    string test = "RSHFL R2,R3,#7 \n.END";
+    string test = ".ORIG x3000\n RSHFL R2,R3,#7 \n.END";
 
     auto i = assembler.assembleBuffer(test);
 
@@ -288,7 +288,7 @@ TEST_CASE("SHF - bit shift tests") {
   }
 
   SECTION("RSHFA") {
-    string test = "RSHFA R2,R3,#7 \n.END";
+    string test = ".ORIG x3000\n RSHFA R2,R3,#7 \n.END";
     auto i = assembler.assembleBuffer(test);
 
     REQUIRE(i.size() == 1);
@@ -303,7 +303,7 @@ TEST_CASE("SHF - bit shift tests") {
 
 TEST_CASE("STORE instructions tests") {
   SECTION("STB - store byte") {
-    string test = "STB R4,R2,#10 \n.END";
+    string test = ".ORIG x3000\n STB R4,R2,#10 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(STB));
     REQUIRE(i[0].ST.SR == 4);
@@ -314,7 +314,7 @@ TEST_CASE("STORE instructions tests") {
   }
 
   SECTION("STW - store byte") {
-    string test = "STW R4,R2,#10 \n.END";
+    string test = ".ORIG x3000\n STW R4,R2,#10 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(STW));
     REQUIRE(i[0].ST.SR == 4);
@@ -327,7 +327,7 @@ TEST_CASE("STORE instructions tests") {
 
 TEST_CASE("TRAP instructions tests") {
   SECTION("OS Call") {
-    string test = "TRAP x23 \n.END";
+    string test = ".ORIG x3000\n TRAP x23 \n.END";
     auto i = assembler.assembleBuffer(test);
     REQUIRE(i[0].OP == op2hex.at(TRAP));
     REQUIRE(i[0].trapvect8 == 0x23);
@@ -335,8 +335,8 @@ TEST_CASE("TRAP instructions tests") {
 }
 
 TEST_CASE("XOR tests") {
-  string test1 = "XOR R3, R1, R2 \n.END";
-  string test2 = "XOR R2, R1, #7 \n.END";
+  string test1 = ".ORIG x3000\n XOR R3, R1, R2 \n.END";
+  string test2 = ".ORIG x3000\n XOR R2, R1, #7 \n.END";
 
   SECTION(test1) {
     auto i = assembler.assembleBuffer(test1);
@@ -364,7 +364,7 @@ TEST_CASE("XOR tests") {
 TEST_CASE("different TRAP tests"){
 #define x(a, b)                                                                \
   SECTION(#a) {                                                                \
-    string str = #a "\n.END";                                                  \
+    string str = ".ORIG x3000\n" #a "\n.END";                                  \
     auto i = assembler.assembleBuffer(str);                                    \
     REQUIRE(i.size() == 1);                                                    \
     REQUIRE(i.at(0).OP == op2hex.at(TRAP));                                    \
@@ -376,7 +376,7 @@ TEST_CASE("different TRAP tests"){
 }
 
 TEST_CASE("NOP tests") {
-  string test1 = "NOP \n.END";
+  string test1 = ".ORIG x3000\n NOP .END";
 
   SECTION(test1) {
     auto i = assembler.assembleBuffer(test1);
@@ -386,11 +386,11 @@ TEST_CASE("NOP tests") {
 }
 
 TEST_CASE("LABEL address locations") {
-  string test1 = "BR LABEL1 LABEL1 .END";
-  string test2 = "BR LABEL1\
+  string test1 = ".ORIG x3000\n BR LABEL1 LABEL1 .END";
+  string test2 = ".ORIG x3000\n BR LABEL1\
 		  BR LABEL1\
 		  LABEL1 .END";
-  string test3 = "LABEL1\
+  string test3 = ".ORIG x3000\n LABEL1\
 		  BR LABEL1\
 		  BR LABEL1\
 		  .END ";

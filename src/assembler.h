@@ -63,6 +63,7 @@ private:
   vector<instruction> directive2instructions(int &location);
 
   vector<instruction> assembleORIG(int &location);
+  vector<instruction> assembleEND(int &location);
   vector<instruction> assembleFILL(int &location);
   vector<instruction> assembleBLKW(int &location);
   vector<instruction> assembleSTRINGZ(int &location);

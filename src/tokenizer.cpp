@@ -18,9 +18,9 @@ const unordered_map<string, TOKEN_TYPE> Tokenizer::str2tokentype = {
 
 ostream &operator<<(ostream &os, Token &t) {
   os << t.lexme;
-  // os << "("
-  //<< t.line << ", " << t.col << ", "
-  //<< TokenType2str.at(int(t.type)) << ")";
+  // os << "(";
+  // os << t.line << ", " << t.col << ", ";
+  // os << TokenType2str.at(int(t.type)) << ")";
   return os;
 }
 

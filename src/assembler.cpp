@@ -285,10 +285,7 @@ vector<instruction> Assembler::directive2instructions(int &location) {
       data = assembleSTRINGZ(location);
       break;
     case END: {
-      directiveInfo info;
-      info.directive = END;
-      info.location = location;
-      directives.push_back(info);
+      assembleEND(location);
     } break;
     default:
       error("Directive not implemented\n", location);
@@ -378,6 +375,11 @@ void Assembler::errorChecks() {
       break;
     }
   }
+  // no orig error
+  if (orig_count == 0) {
+    errors.push_back({Error::mustStartWithORIG, -1});
+  }
+
   // no end error
   if (end_count == 0) {
     errors.push_back({Error::mustEndWithEND, -1});
@@ -410,7 +412,7 @@ void Assembler::errorChecks() {
       cout << "    Error: " << err2msg.at(e.er) << "\n    ";
       tokenizer.printLine(e.location, tokens);
     }
-    // exit(1);
+    exit(1);
   }
 }
 
@@ -1009,7 +1011,6 @@ instruction Assembler::assembleNOP(int &loc) {
   i.i = UINT16_MAX;
   if (tokens[loc].lexme == "NOP") {
     i.i = 0;
-    loc++;
   }
   DEBUG_LOG(NOP)
   return i;
@@ -1024,6 +1025,25 @@ vector<instruction> Assembler::assembleORIG(int &loc) {
     info.location = loc;
     loc++;
     info.number = parseNumber(loc);
+
+    if (info.number == UINT16_MAX) {
+      error("Expected number", loc);
+    }
+
+    directives.push_back(info);
+  }
+  DEBUG_LOG_DIR(ORIG)
+  return data;
+}
+
+vector<instruction> Assembler::assembleEND(int &loc) {
+  vector<instruction> data;
+  directiveInfo info;
+
+  if (tokens[loc].lexme == ".END") {
+    info.directive = END;
+    info.location = loc;
+    loc++;
 
     if (info.number == UINT16_MAX) {
       error("Expected number", loc);
